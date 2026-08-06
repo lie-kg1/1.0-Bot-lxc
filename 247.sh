@@ -11,106 +11,109 @@ fi
 
 while true; do
     clear
-    echo "🛠️ =========================================="
-    echo "       247 BACKGROUND BOT MANAGER            "
+    echo "⚡ =========================================="
+    echo "    247 SPEED MANAGER (100% RELIABLE)        "
     echo "============================================"
     echo ""
-    echo "1. 🚀 Start Bot"
+    echo "1. 🚀 Start Bot (24/7 Background)"
     echo "2. 🔄 Restart Bot"
     echo "3. 🛑 Stop Bot"
-    echo "4. 📊 24/7 Status & Logs"
+    echo "4. 📊 Live Status & Logs"
     echo "5. ❌ Exit"
     echo "--------------------------------------------"
-    read -p "Enter your choice [1-5]: " choice
+    read -p "Enter choice [1-5]: " choice
 
     if [ ! -d "$ENV_DIR" ] && [ "$ENV_DIR" != "." ]; then
-        echo "⚠️ 'vps-deploy' directory not found! Please run option 1 (install) first."
-        read -p "Press Enter to continue..."
+        echo "⚠️ 'vps-deploy' directory missing! Run install first."
+        read -p "Press Enter..."
         continue
     fi
 
     case $choice in
         1)
             cd "$ENV_DIR" || exit
-            if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
-                echo "⚠️ Bot is already running!"
+            if systemctl is-active --quiet bot 2>/dev/null; then
+                echo "⚠️ Bot is already running via systemd!"
+            elif [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
+                echo "⚠️ Bot is already running in background!"
             else
-                echo "🚀 Starting bot in background..."
+                echo "🚀 Launching bot 24/7..."
                 nohup python3 bot.py > bot.log 2>&1 &
                 echo $! > bot.pid
-                sleep 1
+                sleep 0.5
                 if kill -0 "$(cat bot.pid)" 2>/dev/null; then
-                    echo "✅ Bot started successfully!"
+                    echo "✅ Bot is online and running 24/7!"
                 else
-                    echo "❌ Bot failed to start! Check option 4 for error logs."
+                    echo "❌ Failed to start. Check option 4 for logs."
                 fi
             fi
             cd - > /dev/null
-            read -p "Press Enter to continue..."
+            read -p "Press Enter..."
             ;;
         2)
-            echo "🔄 Restarting bot..."
+            echo "🔄 Restarting bot instantly..."
             cd "$ENV_DIR" || exit
+            sudo systemctl restart bot 2>/dev/null
             if [ -f "bot.pid" ]; then
-                PID=$(cat bot.pid)
-                kill "$PID" 2>/dev/null
+                kill "$(cat bot.pid)" 2>/dev/null
                 rm -f bot.pid
             fi
             pkill -f "python3 bot.py" 2>/dev/null
-            sleep 1
+            sleep 0.5
             nohup python3 bot.py > bot.log 2>&1 &
             echo $! > bot.pid
             echo "✅ Bot restarted successfully!"
             cd - > /dev/null
-            read -p "Press Enter to continue..."
+            read -p "Press Enter..."
             ;;
         3)
             echo "🛑 Stopping bot..."
             cd "$ENV_DIR" || exit
+            sudo systemctl stop bot 2>/dev/null
             if [ -f "bot.pid" ]; then
-                PID=$(cat bot.pid)
-                kill "$PID" 2>/dev/null
+                kill "$(cat bot.pid)" 2>/dev/null
                 rm -f bot.pid
             fi
             pkill -f "python3 bot.py" 2>/dev/null
-            echo "✅ Bot stopped successfully!"
+            echo "✅ Bot completely stopped (offline)."
             cd - > /dev/null
-            read -p "Press Enter to continue..."
+            read -p "Press Enter..."
             ;;
         4)
-            echo "📊 Checking 24/7 status and logs..."
+            echo "📊 Live Status Check:"
             cd "$ENV_DIR" || exit
-            RUNNING=false
-            if [ -f "bot.pid" ]; then
-                PID=$(cat bot.pid)
-                if kill -0 "$PID" 2>/dev/null; then
-                    RUNNING=true
-                fi
+            ONLINE=false
+            if systemctl is-active --quiet bot 2>/dev/null; then
+                ONLINE=true
+            elif [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
+                ONLINE=true
+            elif pgrep -f "python3 bot.py" > /dev/null; then
+                ONLINE=true
             fi
 
-            if [ "$RUNNING" = true ]; then
-                echo "🟢 Status: RUNNING (24/7 background mode active)"
+            if [ "$ONLINE" = true ]; then
+                echo "🟢 Status: ONLINE (24/7 AFK Active)"
             else
-                echo "🔴 Status: STOPPED"
+                echo "🔴 Status: OFFLINE (Stopped)"
             fi
             echo ""
-            echo "--- Last 10 lines of bot.log ---"
+            echo "--- Recent Logs (bot.log) ---"
             if [ -f "bot.log" ]; then
-                tail -n 10 bot.log
+                tail -n 12 bot.log
             else
-                echo "No log file found yet."
+                echo "No logs found yet."
             fi
             cd - > /dev/null
             echo ""
-            read -p "Press Enter to continue..."
+            read -p "Press Enter..."
             ;;
         5)
-            echo "Exiting manager..."
+            echo "Exiting..."
             exit 0
             ;;
         *)
-            echo "❌ Invalid choice! Please enter a number between 1 and 5."
-            sleep 2
+            echo "❌ Invalid option!"
+            sleep 1
             ;;
     esac
 done
