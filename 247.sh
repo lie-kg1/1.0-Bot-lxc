@@ -1,7 +1,6 @@
 #!/bin/bash
 exec </dev/tty 2>/dev/null
 
-# Smart path detection for vps-deploy
 if [ -d "vps-deploy" ]; then
     ENV_DIR="vps-deploy"
 elif [ -f "bot.py" ]; then
@@ -32,47 +31,76 @@ while true; do
 
     case $choice in
         1)
-            if pgrep -f "python3 bot.py" > /dev/null; then
+            cd "$ENV_DIR" || exit
+            if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
                 echo "⚠️ Bot is already running!"
             else
                 echo "🚀 Starting bot in background..."
-                cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd - > /dev/null
-                echo "✅ Bot started successfully!"
+                nohup python3 bot.py > bot.log 2>&1 &
+                echo $! > bot.pid
+                sleep 1
+                if kill -0 "$(cat bot.pid)" 2>/dev/null; then
+                    echo "✅ Bot started successfully!"
+                else
+                    echo "❌ Bot failed to start! Check option 4 for error logs."
+                fi
             fi
+            cd - > /dev/null
             read -p "Press Enter to continue..."
             ;;
         2)
             echo "🔄 Restarting bot..."
+            cd "$ENV_DIR" || exit
+            if [ -f "bot.pid" ]; then
+                PID=$(cat bot.pid)
+                kill "$PID" 2>/dev/null
+                rm -f bot.pid
+            fi
             pkill -f "python3 bot.py" 2>/dev/null
             sleep 1
-            cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd - > /dev/null
+            nohup python3 bot.py > bot.log 2>&1 &
+            echo $! > bot.pid
             echo "✅ Bot restarted successfully!"
+            cd - > /dev/null
             read -p "Press Enter to continue..."
             ;;
         3)
-            if pgrep -f "python3 bot.py" > /dev/null; then
-                echo "🛑 Stopping bot..."
-                pkill -f "python3 bot.py"
-                echo "✅ Bot stopped successfully!"
-            else
-                echo "⚠️ Bot is not currently running."
+            echo "🛑 Stopping bot..."
+            cd "$ENV_DIR" || exit
+            if [ -f "bot.pid" ]; then
+                PID=$(cat bot.pid)
+                kill "$PID" 2>/dev/null
+                rm -f bot.pid
             fi
+            pkill -f "python3 bot.py" 2>/dev/null
+            echo "✅ Bot stopped successfully!"
+            cd - > /dev/null
             read -p "Press Enter to continue..."
             ;;
         4)
             echo "📊 Checking 24/7 status and logs..."
-            if pgrep -f "python3 bot.py" > /dev/null; then
+            cd "$ENV_DIR" || exit
+            RUNNING=false
+            if [ -f "bot.pid" ]; then
+                PID=$(cat bot.pid)
+                if kill -0 "$PID" 2>/dev/null; then
+                    RUNNING=true
+                fi
+            fi
+
+            if [ "$RUNNING" = true ]; then
                 echo "🟢 Status: RUNNING (24/7 background mode active)"
             else
                 echo "🔴 Status: STOPPED"
             fi
             echo ""
             echo "--- Last 10 lines of bot.log ---"
-            if [ -f "$ENV_DIR/bot.log" ]; then
-                tail -n 10 "$ENV_DIR/bot.log"
+            if [ -f "bot.log" ]; then
+                tail -n 10 bot.log
             else
                 echo "No log file found yet."
             fi
+            cd - > /dev/null
             echo ""
             read -p "Press Enter to continue..."
             ;;
