@@ -6,7 +6,7 @@ while true; do
     echo "      🚀 DISCORD BOT LXC 🚀    "
     echo "───────────────────────────────"
     echo "1. ⚙️  install"
-    echo "2. 📊  create bot"
+    echo "2. 📊 create bot"
     echo "3. 🛠️  fix 24/7"
     echo "4. 📁 uninstall"
     echo "5. ❌ Exit"
