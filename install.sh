@@ -1,16 +1,23 @@
 #!/bin/bash
 
-echo "🚀 Creating and moving to vps-deploy directory..."
+echo "🚀 Setting up vps-deploy directory..."
 mkdir -p vps-deploy
-cd vps-deploy || exit
 
-echo "📋 Copying environment configuration..."
 if [ -f "test.env" ]; then
-    cp test.env .env
-    echo "✅ Copied test.env to .env"
+    cp test.env vps-deploy/.env
+    echo "✅ Copied test.env to vps-deploy/.env"
 else
-    echo "⚠️ test.env not found!"
+    echo "⚠️ test.env not found in root!"
 fi
+
+if [ -f "requirements.txt" ]; then
+    cp requirements.txt vps-deploy/
+    echo "✅ Copied requirements.txt to vps-deploy/"
+else
+    echo "⚠️ requirements.txt not found in root!"
+fi
+
+cd vps-deploy || exit
 
 echo "📦 Installing python3-pip..."
 sudo apt update && sudo apt install python3-pip -y
