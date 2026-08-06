@@ -1,6 +1,0 @@
-name: HerobrineJumpscare
-version: '1.0.0'
-main: com.liekg1.herobrine.HerobrineJumpscare
-api-version: '1.21'
-author: liekg1
-description: A terrifying plugin that spawns a custom Herobrine jumpscare.
