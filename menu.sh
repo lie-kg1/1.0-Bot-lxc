@@ -7,9 +7,10 @@ while true; do
     echo "───────────────────────────────"
     echo "1. ⚙️  install"
     echo "2. 📊 create bot"
-    echo "3. 🛠️  fix 24/7"
-    echo "4. 📁 uninstall"
-    echo "5. ❌ Exit"
+    echo "3. ⚙️ VPS Defaults"
+    echo "4. 🛠️ 24/7"
+    echo "5. 📁 uninstall"
+    echo "6. ❌ Exit"
     echo "───────────────────────────────"
     read -p "Enter your choice [1-5]: " choice
 
@@ -20,21 +21,26 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         2)
+            echo "Running install..."
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/install.sh)
+            read -p "Press Enter to continue..."
+            ;;    
+        3)
             echo "Creating bot..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/createbot.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/vpsdefaults.sh)
             read -p "Press Enter to continue..."
             ;;
-        3)
+        4)
             echo "Fixing 24/7..."
             bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/.sh)
             read -p "Press Enter to continue..."
             ;;
-        4)
+        5)
             echo "Running uninstall..."
             bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/.sh)
             read -p "Press Enter to continue..."
             ;;
-        5)
+        6)
             echo "Exiting..."
             exit 0
             ;;
