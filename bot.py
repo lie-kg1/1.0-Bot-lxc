@@ -19,11 +19,9 @@ load_dotenv()
 
 # Configuration from .env
 TOKEN = os.getenv('TOKEN', 'DISCORD_BOT_TOKEN')
-admin_env = os.getenv('ADMIN_ID', '0')
-ADMIN_ID = int(admin_env) if admin_env.strip().isdigit() else 0  # Admin user ID for checks
+ADMIN_ID = int(os.getenv('ADMIN_ID', 0))  # Admin user ID for checks
 BOT_STATUS_NAME = os.getenv('BOT_STATUS_NAME', 'UnixNodes')
 WATERMARK = os.getenv('WATERMARK', 'Powered by UnixNodes VPS Bot')
-
 # VPS Defaults from .env
 DEFAULT_RAM = os.getenv('DEFAULT_RAM', '2g')  # e.g., '2g', '4G'
 DEFAULT_CPU = os.getenv('DEFAULT_CPU', '1')  # Lowered default to '1' to avoid common errors
@@ -32,6 +30,17 @@ VPS_HOSTNAME = os.getenv('VPS_HOSTNAME', 'unix-free')  # Base hostname, append u
 SERVER_LIMIT = int(os.getenv('SERVER_LIMIT', 1))
 TOTAL_SERVER_LIMIT = int(os.getenv('TOTAL_SERVER_LIMIT', 50))  # Global total running server limit
 DATABASE_FILE = os.getenv('DATABASE_FILE', 'vps_bot.db')
+
+# Centralized OS Mapping for Docker Images and Display Names
+OS_MAPPING = {
+    "ubuntu_22": ("ubuntu:22.04", "Ubuntu 22.04 LTS"),
+    "ubuntu_24": ("ubuntu:24.04", "Ubuntu 24.04 LTS"),
+    "debian_12": ("debian:bookworm", "Debian 12 (Bookworm)"),
+    "debian_13": ("debian:trixie", "Debian 13 (Trixie)"),
+    # Fallback / legacy short keys
+    "ubuntu": ("ubuntu:22.04", "Ubuntu 22.04 LTS"),
+    "debian": ("debian:bookworm", "Debian 12 (Bookworm)")
+}
 
 # Logging setup
 logging.basicConfig(
@@ -48,11 +57,7 @@ logger = logging.getLogger(__name__)
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
-
-try:
-    client = docker.from_env()
-except Exception as e:
-    logger.warning(f"Docker client initialization warning: {e}")
+client = docker.from_env()
 
 def is_admin(member):
     if not isinstance(member, discord.Member):
@@ -74,7 +79,7 @@ def init_db():
     default_ram = DEFAULT_RAM
     default_cpu = DEFAULT_CPU
     default_disk = DEFAULT_DISK
-    cursor.execute(f'''
+    sql = f'''
         CREATE TABLE IF NOT EXISTS vps (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -91,7 +96,8 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (user_id)
         )
-    ''')
+    '''
+    cursor.execute(sql)
     cursor.execute("PRAGMA table_info(vps)")
     columns = [col[1] for col in cursor.fetchall()]
     if 'suspended' not in columns:
@@ -261,7 +267,7 @@ def get_stats(container_id):
 def get_logs(container_id, lines=50):
     try:
         output = subprocess.check_output(["docker", "logs", "--tail", str(lines), container_id], stderr=subprocess.STDOUT).decode()
-        return output[-2000:]
+        return output[-2000:]  # Truncate for Discord limit
     except Exception as e:
         logger.error(f"Logs error for {container_id}: {e}")
         return "Failed to fetch logs"
@@ -281,13 +287,19 @@ async def async_docker_run(image, hostname, ram, cpu, disk, container_name):
     ]
     try:
         proc = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60.0)
+        # Increased timeout to 180 seconds to allow smooth image pulling for Ubuntu 24 / Debian 13
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=180.0)
         if proc.returncode != 0:
             logger.error(f"Docker run failed: {stderr.decode()}")
             return None
         return stdout.decode().strip()
+    except asyncio.TimeoutError:
+        logger.error("Docker run timed out (exceeded 180s)")
+        return None
     except Exception as e:
         logger.error(f"Docker run error: {e}")
         return None
@@ -296,44 +308,65 @@ async def async_docker_start(container_id):
     try:
         proc = await asyncio.create_subprocess_exec(
             "docker", "start", container_id,
-            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
         )
         await asyncio.wait_for(proc.communicate(), timeout=30.0)
         return proc.returncode == 0
-    except Exception:
+    except asyncio.TimeoutError:
+        logger.warning(f"Docker start timeout for {container_id}")
+        return False
+    except Exception as e:
+        logger.error(f"Docker start error for {container_id}: {e}")
         return False
 
 async def async_docker_stop(container_id):
     try:
         proc = await asyncio.create_subprocess_exec(
             "docker", "stop", container_id,
-            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
         )
         await asyncio.wait_for(proc.communicate(), timeout=30.0)
         return proc.returncode == 0
-    except Exception:
+    except asyncio.TimeoutError:
+        logger.warning(f"Docker stop timeout for {container_id}")
+        try:
+            await asyncio.create_subprocess_exec("docker", "kill", container_id, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL).communicate()
+        except:
+            pass
+        return False
+    except Exception as e:
+        logger.error(f"Docker stop error for {container_id}: {e}")
         return False
 
 async def async_docker_restart(container_id):
     try:
         proc = await asyncio.create_subprocess_exec(
             "docker", "restart", container_id,
-            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
         )
         await asyncio.wait_for(proc.communicate(), timeout=30.0)
         return proc.returncode == 0
-    except Exception:
+    except asyncio.TimeoutError:
+        logger.warning(f"Docker restart timeout for {container_id}")
+        return False
+    except Exception as e:
+        logger.error(f"Docker restart error for {container_id}: {e}")
         return False
 
 async def async_docker_rm(container_id):
     try:
         proc = await asyncio.create_subprocess_exec(
             "docker", "rm", "-f", container_id,
-            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
         )
         await proc.communicate()
         return proc.returncode == 0
-    except Exception:
+    except Exception as e:
+        logger.error(f"Docker rm error for {container_id}: {e}")
         return False
 
 async def async_install_tmate(container_id, os_type):
@@ -341,12 +374,20 @@ async def async_install_tmate(container_id, os_type):
     try:
         proc = await asyncio.create_subprocess_exec(
             "docker", "exec", container_id, "bash", "-c", install_cmd,
-            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.PIPE
         )
-        await asyncio.wait_for(proc.communicate(), timeout=120.0)
+        _, stderr = await asyncio.wait_for(proc.communicate(), timeout=120.0)
+        if proc.returncode != 0:
+            logger.warning(f"Tmate install warning for {container_id}: {stderr.decode()}")
+        else:
+            logger.info(f"Tmate installed in {container_id}")
+    except asyncio.TimeoutError:
+        logger.error(f"Tmate install timeout for {container_id}")
     except Exception as e:
-        logger.error(f"Tmate install error: {e}")
+        logger.error(f"Failed to install tmate in {container_id}: {e}")
 
+# SSH capture
 async def capture_ssh_session_line(process):
     while True:
         try:
@@ -362,14 +403,16 @@ async def capture_ssh_session_line(process):
 
 async def docker_exec_tmate(container_id):
     try:
-        return await asyncio.create_subprocess_exec(
+        exec_cmd = await asyncio.create_subprocess_exec(
             "docker", "exec", container_id, "tmate", "-F",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
-    except Exception:
+        return exec_cmd
+    except Exception as e:
+        logger.error(f"Tmate exec failed: {e}")
         return None
 
-# Helper functions for management
+# Generic regen SSH
 async def regen_ssh_command(interaction: discord.Interaction, vps_identifier, send_response=True, target_user=None):
     if target_user is None:
         target_user = interaction.user
@@ -397,10 +440,12 @@ async def regen_ssh_command(interaction: discord.Interaction, vps_identifier, se
             try:
                 await target_user.send(embed=embed)
             except discord.Forbidden:
+                logger.warning(f"Cannot DM user {target_user.id}")
                 if send_response:
                     embed_dm_fail = discord.Embed(description="New SSH session generated but could not send to DMs (privacy settings).", color=discord.Color.orange())
                     await interaction.followup.send(embed=embed_dm_fail, ephemeral=True)
-                return True
+                else:
+                    return True
             if send_response:
                 embed_success = discord.Embed(description="New SSH session sent to your DMs.", color=discord.Color.green())
                 await interaction.followup.send(embed=embed_success, ephemeral=True)
@@ -416,6 +461,7 @@ async def regen_ssh_command(interaction: discord.Interaction, vps_identifier, se
             await interaction.followup.send(embed=embed, ephemeral=True)
         return False
 
+# Start/Stop/Restart helpers
 async def manage_vps(interaction: discord.Interaction, vps_identifier, action, target_user=None):
     if target_user is None:
         target_user = interaction.user
@@ -430,6 +476,7 @@ async def manage_vps(interaction: discord.Interaction, vps_identifier, action, t
         await interaction.followup.send(embed=embed, ephemeral=True)
         return
     container_id = vps['container_id']
+    os_type = vps['os_type']
     success = False
     if action == "start":
         success = await async_docker_start(container_id)
@@ -444,175 +491,262 @@ async def manage_vps(interaction: discord.Interaction, vps_identifier, action, t
         if success:
             update_vps_status(container_id, "running")
     if success:
-        embed = discord.Embed(title=f"VPS {action.title()}ed Successfully", color=discord.Color.green(), timestamp=datetime.now(timezone.utc))
+        os_name = OS_MAPPING.get(os_type, ("ubuntu:22.04", "Ubuntu 22.04 LTS"))[1]
+        embed = discord.Embed(title=f"VPS {action.title()}ed Successfully", description=f"OS: {os_name}", color=discord.Color.green(), timestamp=datetime.now(timezone.utc))
         embed.set_footer(text=WATERMARK, icon_url=bot.user.avatar.url if bot.user.avatar else None)
         if action in ["start", "restart"]:
-            await regen_ssh_command(interaction, vps_identifier, send_response=False, target_user=target_user)
-            embed.description = "New SSH session sent to DMs."
+            regen_success = await regen_ssh_command(interaction, vps_identifier, send_response=False, target_user=target_user)
+            if regen_success:
+                embed.description += "\nNew SSH session sent to DMs."
+            else:
+                embed.description += "\nFailed to generate new SSH session."
         await interaction.followup.send(embed=embed, ephemeral=True)
     else:
         embed = discord.Embed(description=f"Failed to {action} the VPS.", color=discord.Color.red())
         await interaction.followup.send(embed=embed, ephemeral=True)
 
+# Reinstall helper
+async def reinstall_vps(interaction: discord.Interaction, vps_identifier, os_type, target_user=None):
+    if target_user is None:
+        target_user = interaction.user
+    await interaction.response.defer(ephemeral=True)
+    vps = get_vps_by_identifier(target_user.id, vps_identifier)
+    if not vps:
+        embed = discord.Embed(description="No VPS found.", color=discord.Color.red())
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        return
+    container_id = vps['container_id']
+    user_id = vps['user_id']
+    hostname = vps['hostname']
+    ram, cpu, disk = vps['ram'], vps['cpu'], vps['disk']
+    
+    # Stop and remove
+    await async_docker_stop(container_id)
+    await asyncio.sleep(2)
+    await async_docker_rm(container_id)
+    delete_vps(container_id)
+    
+    # Create new with unique name
+    suffix = random.randint(1000, 9999)
+    new_container_name = f"{os_type}-vps-{user_id}-{suffix}"
+    image, os_name = OS_MAPPING.get(os_type, ("ubuntu:22.04", "Ubuntu 22.04 LTS"))
+    
+    new_container_id = await async_docker_run(image, hostname, ram, cpu, disk, new_container_name)
+    if new_container_id:
+        await async_install_tmate(new_container_id, os_type)
+        await asyncio.sleep(10)  # Wait longer for install
+        exec_process = await docker_exec_tmate(new_container_id)
+        ssh_line = await capture_ssh_session_line(exec_process)
+        if ssh_line:
+            add_vps(user_id, new_container_id, new_container_name, os_type, hostname, ssh_line, ram, cpu, disk)
+            embed = discord.Embed(title="VPS Reinstalled Successfully", description=f"OS: {os_name}\n```{ssh_line}```", color=discord.Color.green(), timestamp=datetime.now(timezone.utc))
+            embed.set_footer(text=WATERMARK, icon_url=bot.user.avatar.url if bot.user.avatar else None)
+            try:
+                await target_user.send(embed=embed)
+            except discord.Forbidden:
+                logger.warning(f"Cannot DM user {target_user.id} for reinstall")
+            embed_success = discord.Embed(description="VPS has been reinstalled. Check your DMs for details.", color=discord.Color.green())
+            await interaction.followup.send(embed=embed_success, ephemeral=True)
+        else:
+            embed = discord.Embed(description="Reinstall failed: Unable to generate SSH.", color=discord.Color.red())
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            await async_docker_rm(new_container_id)
+    else:
+        embed = discord.Embed(description="Reinstall failed: Docker creation error.", color=discord.Color.red())
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+# Create VPS helper
 async def create_vps(interaction: discord.Interaction, os_type, ram=DEFAULT_RAM, cpu=DEFAULT_CPU, disk=DEFAULT_DISK, target_user=None):
     if target_user is None:
         target_user = interaction.user
     user_id = target_user.id
     username = str(target_user)
     add_user(user_id, username)
-    
     if is_banned(user_id):
-        return await interaction.response.send_message("You are banned from creating VPS instances.", ephemeral=True)
+        embed = discord.Embed(description="You are banned from creating VPS instances.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
     if count_user_vps(user_id) >= SERVER_LIMIT:
-        return await interaction.response.send_message(f"You have reached your limit of {SERVER_LIMIT} VPS.", ephemeral=True)
+        embed = discord.Embed(description=f"You have reached the limit of {SERVER_LIMIT} VPS instances.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
     if get_total_instances() >= TOTAL_SERVER_LIMIT:
-        return await interaction.response.send_message("Global server limit reached.", ephemeral=True)
+        embed = discord.Embed(description=f"Global server limit reached: {TOTAL_SERVER_LIMIT} total running instances.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    # Validate resources against host
+    try:
+        host_info = client.info()
+        host_cpus = host_info['NCPU']
+        host_mem_gb = host_info['MemTotal'] / (1024 ** 3)
+        req_cpu = float(cpu)
+        req_ram = parse_gb(ram)
+        if req_cpu > host_cpus:
+            embed = discord.Embed(description=f"Requested CPU ({req_cpu}) exceeds host limit ({host_cpus}).", color=discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        if req_ram > host_mem_gb:
+            embed = discord.Embed(description=f"Requested RAM ({req_ram}GB) exceeds host limit ({host_mem_gb:.1f}GB).", color=discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+    except Exception as e:
+        logger.error(f"Resource validation failed: {e}")
+        embed = discord.Embed(description="Resource validation failed. Please contact an admin.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
     
     await interaction.response.defer(ephemeral=True)
+    await interaction.followup.send("Creating your VPS instance...", ephemeral=True)
+    
     hostname = f"{VPS_HOSTNAME}-{user_id}"
     suffix = random.randint(1000, 9999)
     container_name = f"{os_type}-vps-{user_id}-{suffix}"
     
-    image_map = {
-        "ubuntu-24.04": "ubuntu:24.04",
-        "ubuntu-22.04": "ubuntu:22.04",
-        "debian-13": "debian:trixie",
-        "debian-12": "debian:bookworm"
-    }
-    image = image_map.get(os_type, "debian:bookworm")
-    
+    image, os_name = OS_MAPPING.get(os_type, ("ubuntu:22.04", "Ubuntu 22.04 LTS"))
     container_id = await async_docker_run(image, hostname, ram, cpu, disk, container_name)
+    
     if not container_id:
-        return await interaction.followup.send("Failed to create Docker container.", ephemeral=True)
-    
-    await asyncio.sleep(5)
+        embed = discord.Embed(description="Failed to create Docker container. (Check logs for details)", color=discord.Color.red())
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        return
+        
+    await asyncio.sleep(5)  # Wait for container to start
     await async_install_tmate(container_id, os_type)
-    await asyncio.sleep(8)
-    
+    await asyncio.sleep(10)  # Wait for install
     exec_process = await docker_exec_tmate(container_id)
-    ssh_line = await capture_ssh_session_line(exec_process) if exec_process else None
+    ssh_line = await capture_ssh_session_line(exec_process)
     
     if ssh_line:
         add_vps(user_id, container_id, container_name, os_type, hostname, ssh_line, ram, cpu, disk)
-        embed = discord.Embed(title="VPS Created", description=f"OS: {os_type}\n```{ssh_line}```", color=discord.Color.green())
+        embed = discord.Embed(title="VPS Instance Created", description=f"OS: {os_name}\nRAM: {ram} | CPU: {cpu} | Disk: {disk}\n```{ssh_line}```", color=discord.Color.green(), timestamp=datetime.now(timezone.utc))
+        embed.set_footer(text=WATERMARK, icon_url=bot.user.avatar.url if bot.user.avatar else None)
         try:
             await target_user.send(embed=embed)
-        except Exception:
-            pass
-        await interaction.followup.send("VPS is ready! Check your DMs for SSH access.", ephemeral=True)
+        except discord.Forbidden:
+            logger.warning(f"Cannot DM user {target_user.id} for creation")
+        embed_success = discord.Embed(description="Your VPS is ready! Check your DMs for access details.", color=discord.Color.green())
+        await interaction.followup.send(embed=embed_success, ephemeral=True)
     else:
+        embed = discord.Embed(description="Creation failed: Unable to generate SSH session.", color=discord.Color.red())
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        await async_docker_stop(container_id)
+        await asyncio.sleep(2)
         await async_docker_rm(container_id)
-        await interaction.followup.send("Failed to generate SSH session.", ephemeral=True)
 
-# Bot Groups & Commands
-vps_group = app_commands.Group(name="vps", description="Manage your VPS instances")
-admin_group = app_commands.Group(name="admin", description="Admin controls")
+# Admin helpers
+async def admin_manage_vps(interaction: discord.Interaction, target_user_id: int, vps_identifier: str, action: str):
+    if not is_admin(interaction.user):
+        embed = discord.Embed(description="This command is restricted to admins only.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    target_user = await bot.fetch_user(target_user_id)
+    if not target_user:
+        embed = discord.Embed(description="User not found.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed)
+        return
+    vps = get_vps_by_identifier(target_user_id, vps_identifier)
+    if not vps:
+        embed = discord.Embed(description="VPS not found for this user.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed)
+        return
+    container_id = vps['container_id']
+    success = False
+    if action == "delete":
+        await async_docker_stop(container_id)
+        await asyncio.sleep(2)
+        await async_docker_rm(container_id)
+        delete_vps(container_id)
+        success = True
+        msg = f"Deleted VPS for {target_user}"
+    elif action in ["start", "stop", "restart"]:
+        if action == "start":
+            success = await async_docker_start(container_id)
+            update_vps_status(container_id, "running")
+        elif action == "stop":
+            success = await async_docker_stop(container_id)
+            update_vps_status(container_id, "stopped")
+        elif action == "restart":
+            success = await async_docker_restart(container_id)
+            update_vps_status(container_id, "running")
+        msg = f"{action.title()}ed VPS for {target_user}"
+    elif action == "suspend":
+        success = await async_docker_stop(container_id)
+        if success:
+            update_vps_status(container_id, "stopped")
+            update_vps_suspended(container_id, 1)
+        msg = f"Suspended VPS for {target_user}"
+    elif action == "unsuspend":
+        update_vps_suspended(container_id, 0)
+        success = True
+        msg = f"Unsuspended VPS for {target_user}. You can now start it."
+    if success:
+        embed = discord.Embed(title="Admin Action Completed", description=msg, color=discord.Color.green(), timestamp=datetime.now(timezone.utc))
+        embed.set_footer(text=WATERMARK, icon_url=bot.user.avatar.url if bot.user.avatar else None)
+        await interaction.response.send_message(embed=embed)
+    else:
+        embed = discord.Embed(description="Action failed.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed)
 
-@bot.event
-async def on_ready():
-    change_status.start()
-    sync_statuses.start()
-    logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
-    try:
-        synced = await bot.tree.sync()
-        logger.info(f"Synced {len(synced)} commands")
-    except Exception as e:
-        logger.error(f"Sync failed: {e}")
-    await bot.change_presence(activity=discord.Game(name=BOT_STATUS_NAME))
-
-@tasks.loop(seconds=10)
-async def change_status():
-    try:
-        count = get_total_instances()
-        status = f"{BOT_STATUS_NAME} | {count} Active"
-        await bot.change_presence(activity=discord.Game(name=status))
-    except Exception as e:
-        logger.error(f"Status task error: {e}")
-
-@tasks.loop(seconds=30)
-async def sync_statuses():
+async def admin_kill_all(interaction: discord.Interaction):
+    if not is_admin(interaction.user):
+        embed = discord.Embed(description="This command is restricted to admins only.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    await interaction.response.defer()
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT container_id, status FROM vps')
-    for row in cursor.fetchall():
-        cid = row['container_id']
-        stat = row['status']
-        try:
-            out = subprocess.check_output(["docker", "inspect", "-f", "{{.State.Status}}", cid]).decode().strip()
-            if out != stat:
-                update_vps_status(cid, out)
-        except subprocess.CalledProcessError:
-            if stat != "stopped":
-                update_vps_status(cid, "stopped")
-        except Exception as e:
-            logger.error(f"Status sync error for {cid}: {e}")
+    cursor.execute('SELECT container_id FROM vps WHERE status = "running"')
+    running = cursor.fetchall()
     conn.close()
+    stopped = 0
+    for row in running:
+        cid = row['container_id']
+        if await async_docker_stop(cid):
+            update_vps_status(cid, "stopped")
+            stopped += 1
+            logger.info(f"Stopped {cid}")
+    embed = discord.Embed(title="Admin: Kill All Running VPS", description=f"Successfully stopped {stopped} running VPS instances.", color=discord.Color.green(), timestamp=datetime.now(timezone.utc))
+    embed.set_footer(text=WATERMARK, icon_url=bot.user.avatar.url if bot.user.avatar else None)
+    await interaction.followup.send(embed=embed)
 
-@vps_group.command(name="create", description="Create a new VPS instance")
-@app_commands.choices(os_type=[
-    app_commands.Choice(name="Ubuntu 24.04 LTS (Noble)", value="ubuntu-24.04"),
-    app_commands.Choice(name="Ubuntu 22.04 LTS (Jammy)", value="ubuntu-22.04"),
-    app_commands.Choice(name="Debian 13 (Trixie)", value="debian-13"),
-    app_commands.Choice(name="Debian 12 (Bookworm)", value="debian-12")
-])
-async def vps_create(interaction: discord.Interaction, os_type: str, ram: str = DEFAULT_RAM, cpu: str = DEFAULT_CPU, disk: str = DEFAULT_DISK):
-    await create_vps(interaction, os_type, ram, cpu, disk)
-
-@vps_group.command(name="list", description="List your VPS instances")
-async def vps_list(interaction: discord.Interaction):
-    vps_list = get_user_vps(interaction.user.id)
-    if not vps_list:
-        return await interaction.response.send_message("You don't have any active VPS instances.", ephemeral=True)
-    
-    embed = discord.Embed(title="Your VPS Instances", color=discord.Color.blue())
-    for vps in vps_list:
-        embed.add_field(
-            name=f"{vps['container_name']} ({vps['os_type']})",
-            value=f"Status: **{vps['status']}**\nRAM: {vps['ram']} | CPU: {vps['cpu']}\nID: `{vps['container_id'][:12]}`",
-            inline=False
-        )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
-@vps_group.command(name="start", description="Start a stopped VPS")
-@app_commands.describe(vps_identifier="Container ID or Name")
-async def vps_start(interaction: discord.Interaction, vps_identifier: str = None):
-    await manage_vps(interaction, vps_identifier, "start")
-
-@vps_group.command(name="stop", description="Stop a running VPS")
-@app_commands.describe(vps_identifier="Container ID or Name")
-async def vps_stop(interaction: discord.Interaction, vps_identifier: str = None):
-    await manage_vps(interaction, vps_identifier, "stop")
-
-@vps_group.command(name="restart", description="Restart a VPS")
-@app_commands.describe(vps_identifier="Container ID or Name")
-async def vps_restart(interaction: discord.Interaction, vps_identifier: str = None):
-    await manage_vps(interaction, vps_identifier, "restart")
-
-@admin_group.command(name="list", description="List all VPS instances (Admin)")
+@bot.tree.command(name="admin-list", description="Admin: List all VPS instances")
+@app_commands.guild_only()
 async def admin_list(interaction: discord.Interaction):
     if not is_admin(interaction.user):
-        return await interaction.response.send_message("Restricted to admins.", ephemeral=True)
-    
+        embed = discord.Embed(description="This command is restricted to admins only.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT u.username, v.container_name, v.os_type, v.status, v.container_id 
+        SELECT u.username, v.container_id, v.container_name, v.os_type, v.hostname, v.status, v.ram, v.cpu, v.disk, v.suspended
         FROM vps v JOIN users u ON v.user_id = u.user_id
+        ORDER BY v.created_at DESC
     ''')
-    rows = cursor.fetchall()
+    all_vps = cursor.fetchall()
     conn.close()
-    
-    if not rows:
-        return await interaction.response.send_message("No active VPS instances found.", ephemeral=True)
-    
-    embed = discord.Embed(title="All VPS Instances", color=discord.Color.blue())
-    for r in rows[:25]:
-        embed.add_field(name=f"{r['username']} - {r['container_name']}", value=f"Status: {r['status']}\nID: `{r['container_id'][:12]}`", inline=False)
-    
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
-bot.tree.add_command(vps_group)
-bot.tree.add_command(admin_group)
-
-if __name__ == '__main__':
-    bot.run(TOKEN)
+    if not all_vps:
+        embed = discord.Embed(description="No VPS instances found.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed)
+        return
+    embed = discord.Embed(title="All VPS Instances", color=discord.Color.blue(), timestamp=datetime.now(timezone.utc))
+    embed.set_author(name=bot.user.name, icon_url=bot.user.avatar.url if bot.user.avatar else None)
+    for row in all_vps[:25]:
+        username = row['username']
+        container_id = row['container_id']
+        container_name = row['container_name']
+        os_type = row['os_type']
+        hostname = row['hostname']
+        status = row['status']
+        ram = row['ram']
+        cpu = row['cpu']
+        disk = row['disk']
+        suspended = row['suspended']
+        status_emoji = "🟢" if status == "running" else "🔴"
+        suspended_text = "(Suspended)" if suspended else ""
+        os_name = OS_MAPPING.get(os_type, ("ubuntu:22.04", "Ubuntu 22.04 LTS"))[1]
+        embed.add_field(
+            name=f"{status_emoji} {username} - {container_name} ({os_name}) {suspended_text}",
+            value=f"ID: 
+http://googleusercontent.com/immersive_entry_chip/0
+http://googleusercontent.com/immersive_entry_chip/1
