@@ -8,7 +8,7 @@ while true; do
     echo "1. ⚙️  install"
     echo "2. 📊 create bot"
     echo "3. ⚙️  VPS Defaults"
-    echo "4. 🛠️  24/7"
+    echo "4. 🛠️  24/7 Manager"
     echo "5. 📁 uninstall"
     echo "6. ❌ Exit"
     echo "───────────────────────────────"
@@ -21,7 +21,7 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         2)
-            echo "Creating bot..."
+            echo "Creating bot configuration..."
             bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/createbot.sh)
             read -p "Press Enter to continue..."
             ;;    
