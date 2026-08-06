@@ -22,7 +22,7 @@ while true; do
             ;;
         2)
             echo "Running install..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/install.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/createbot.sh)
             read -p "Press Enter to continue..."
             ;;    
         3)
