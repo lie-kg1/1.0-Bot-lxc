@@ -21,6 +21,15 @@ else
     echo "✅ Downloaded requirements.txt successfully!"
 fi
 
+if [ -f "bot.py" ]; then
+    cp bot.py vps-deploy/
+    echo "✅ Copied local bot.py to vps-deploy/"
+else
+    echo "⚠️ Local bot.py not found. Downloading from GitHub..."
+    curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/bot.py -o vps-deploy/bot.py
+    echo "✅ Downloaded bot.py successfully!"
+fi
+
 cd vps-deploy || exit
 
 echo "📦 Installing python3-pip..."
