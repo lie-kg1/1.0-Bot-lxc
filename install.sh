@@ -5,16 +5,20 @@ mkdir -p vps-deploy
 
 if [ -f "test.env" ]; then
     cp test.env vps-deploy/.env
-    echo "✅ Copied test.env to vps-deploy/.env"
+    echo "✅ Copied local test.env to vps-deploy/.env"
 else
-    echo "⚠️ test.env not found in root!"
+    echo "⚠️ Local test.env not found. Downloading from GitHub..."
+    curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/test.env -o vps-deploy/.env
+    echo "✅ Downloaded .env successfully!"
 fi
 
 if [ -f "requirements.txt" ]; then
     cp requirements.txt vps-deploy/
-    echo "✅ Copied requirements.txt to vps-deploy/"
+    echo "✅ Copied local requirements.txt to vps-deploy/"
 else
-    echo "⚠️ requirements.txt not found in root!"
+    echo "⚠️ Local requirements.txt not found. Downloading from GitHub..."
+    curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/requirements.txt -o vps-deploy/requirements.txt
+    echo "✅ Downloaded requirements.txt successfully!"
 fi
 
 cd vps-deploy || exit
