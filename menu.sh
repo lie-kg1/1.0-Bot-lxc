@@ -3,14 +3,14 @@
 while true; do
     clear
     echo "───────────────────────────────"
-    echo "     🚀 DISCORD BOT LXC 🚀     "
+    echo "    🚀  DISCORD BOT LXC 🚀     "
     echo "───────────────────────────────"
     echo "1. ⚙️  install"
-    echo "2. 📊 create bot"
+    echo "2. 📊  create bot"
     echo "3. ⚙️  VPS Defaults"
     echo "4. 🛠️  24/7 Manager"
-    echo "5. 📁 uninstall"
-    echo "6. ❌ Exit"
+    echo "5. 📁  uninstall"
+    echo "6. ❌  Exit"
     echo "───────────────────────────────"
     read -p "Enter your choice [1-6]: " choice
 
