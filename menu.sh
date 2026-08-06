@@ -16,7 +16,7 @@ while true; do
     case $choice in
         1)
             echo "Running install..."
-            # Add your install commands here
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/install.sh)
             read -p "Press Enter to continue..."
             ;;
         2)
