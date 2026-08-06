@@ -21,17 +21,17 @@ while true; do
             ;;
         2)
             echo "Creating bot..."
-            # Add your create bot commands here
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/createbot.sh)
             read -p "Press Enter to continue..."
             ;;
         3)
             echo "Fixing 24/7..."
-            # Add your fix 24/7 commands here
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/.sh)
             read -p "Press Enter to continue..."
             ;;
         4)
             echo "Running uninstall..."
-            # Add your uninstall commands here
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/.sh)
             read -p "Press Enter to continue..."
             ;;
         5)
