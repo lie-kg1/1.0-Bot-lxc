@@ -1,11 +1,18 @@
 #!/bin/bash
 
-ENV_DIR="vps-deploy"
+# Smart path detection
+if [ -d "vps-deploy" ]; then
+    ENV_DIR="vps-deploy"
+elif [ -f "bot.py" ]; then
+    ENV_DIR="."
+else
+    ENV_DIR="vps-deploy"
+fi
 
 while true; do
     clear
     echo "🛠️ =========================================="
-    echo "       247 BACKGROUND BOT MANAGER (FIX)      "
+    echo "       247 BACKGROUND BOT MANAGER            "
     echo "============================================"
     echo ""
     echo "1. 🚀 Start Bot"
@@ -16,14 +23,8 @@ while true; do
     echo "--------------------------------------------"
     read -p "Enter your choice [1-5]: " choice
 
-    if [ ! -d "$ENV_DIR" ]; then
-        echo "⚠️ $ENV_DIR directory not found! Please run 'install' first."
-        read -p "Press Enter to continue..."
-        continue
-    fi
-
-    if [ ! -f "$ENV_DIR/bot.py" ]; then
-        echo "❌ bot.py not found in $ENV_DIR/!"
+    if [ ! -d "$ENV_DIR" ] && [ "$ENV_DIR" != "." ]; then
+        echo "⚠️ Deployment directory not found! Please run 'install' and 'create bot' first."
         read -p "Press Enter to continue..."
         continue
     fi
@@ -34,7 +35,7 @@ while true; do
                 echo "⚠️ Bot is already running!"
             else
                 echo "🚀 Starting bot in background..."
-                cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd ..
+                cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd - > /dev/null
                 echo "✅ Bot started successfully!"
             fi
             read -p "Press Enter to continue..."
@@ -43,7 +44,7 @@ while true; do
             echo "🔄 Restarting bot..."
             pkill -f "python3 bot.py" 2>/dev/null
             sleep 1
-            cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd ..
+            cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd - > /dev/null
             echo "✅ Bot restarted successfully!"
             read -p "Press Enter to continue..."
             ;;
