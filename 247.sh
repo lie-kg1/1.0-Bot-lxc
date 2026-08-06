@@ -22,7 +22,11 @@ while true; do
         continue
     fi
 
-    cd "$ENV_DIR" || exit
+    if [ ! -f "$ENV_DIR/bot.py" ]; then
+        echo "❌ bot.py not found in $ENV_DIR/!"
+        read -p "Press Enter to continue..."
+        continue
+    fi
 
     case $choice in
         1)
@@ -30,7 +34,7 @@ while true; do
                 echo "⚠️ Bot is already running!"
             else
                 echo "🚀 Starting bot in background..."
-                nohup python3 bot.py > bot.log 2>&1 &
+                cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd ..
                 echo "✅ Bot started successfully!"
             fi
             read -p "Press Enter to continue..."
@@ -39,7 +43,7 @@ while true; do
             echo "🔄 Restarting bot..."
             pkill -f "python3 bot.py" 2>/dev/null
             sleep 1
-            nohup python3 bot.py > bot.log 2>&1 &
+            cd "$ENV_DIR" && nohup python3 bot.py > bot.log 2>&1 & cd ..
             echo "✅ Bot restarted successfully!"
             read -p "Press Enter to continue..."
             ;;
@@ -62,8 +66,8 @@ while true; do
             fi
             echo ""
             echo "--- Last 10 lines of bot.log ---"
-            if [ -f "bot.log" ]; then
-                tail -n 10 bot.log
+            if [ -f "$ENV_DIR/bot.log" ]; then
+                tail -n 10 "$ENV_DIR/bot.log"
             else
                 echo "No log file found yet."
             fi
@@ -79,5 +83,4 @@ while true; do
             sleep 2
             ;;
     esac
-    cd ..
 done
