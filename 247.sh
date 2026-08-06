@@ -1,6 +1,7 @@
 #!/bin/bash
+exec </dev/tty 2>/dev/null
 
-# Smart path detection
+# Smart path detection for vps-deploy
 if [ -d "vps-deploy" ]; then
     ENV_DIR="vps-deploy"
 elif [ -f "bot.py" ]; then
@@ -24,7 +25,7 @@ while true; do
     read -p "Enter your choice [1-5]: " choice
 
     if [ ! -d "$ENV_DIR" ] && [ "$ENV_DIR" != "." ]; then
-        echo "⚠️ Deployment directory not found! Please run 'install' and 'create bot' first."
+        echo "⚠️ 'vps-deploy' directory not found! Please run option 1 (install) first."
         read -p "Press Enter to continue..."
         continue
     fi
