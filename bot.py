@@ -146,14 +146,39 @@ def get_user_vps(user_id):
 def count_user_vps(user_id):
     return len(get_user_vps(user_id))
 
-def get_total_instances():
+def get_vps_by_identifier(user_id, identifier):
+    vps_list = get_user_vps(user_id)
+    if not identifier:
+        return vps_list[0] if vps_list else None
+    identifier_lower = identifier.lower()
+    for vps in vps_list:
+        if (identifier_lower in vps['container_id'].lower() or
+            identifier_lower in vps['container_name'].lower()):
+            return vps
+    return None
+
+def update_vps_status(container_id, status):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) FROM vps WHERE status = "running"')
-    count = cursor.fetchone()[0]
+    cursor.execute('UPDATE vps SET status = ? WHERE container_id = ?', (status, container_id))
+    conn.commit()
     conn.close()
-    return count
 
+def update_vps_ssh(container_id, ssh_command):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE vps SET ssh_command = ? WHERE container_id = ?', (ssh_command, container_id))
+    conn.commit()
+    conn.close()
+
+def delete_vps(container_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM vps WHERE container_id = ?', (container_id,))
+    conn.commit()
+    conn.close()
+
+# Async Docker helpers
 async def async_docker_run(image, hostname, ram, cpu, disk, container_name):
     cmd = [
         "docker", "run", "-d",
@@ -178,6 +203,39 @@ async def async_docker_run(image, hostname, ram, cpu, disk, container_name):
     except Exception as e:
         logger.error(f"Docker run error: {e}")
         return None
+
+async def async_docker_start(container_id):
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "docker", "start", container_id,
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+        )
+        await asyncio.wait_for(proc.communicate(), timeout=30.0)
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+async def async_docker_stop(container_id):
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "docker", "stop", container_id,
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+        )
+        await asyncio.wait_for(proc.communicate(), timeout=30.0)
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+async def async_docker_restart(container_id):
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "docker", "restart", container_id,
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+        )
+        await asyncio.wait_for(proc.communicate(), timeout=30.0)
+        return proc.returncode == 0
+    except Exception:
+        return False
 
 async def async_docker_rm(container_id):
     try:
@@ -223,7 +281,7 @@ async def docker_exec_tmate(container_id):
     except Exception:
         return None
 
-# Bot Events & Group Commands
+# Bot Groups & Commands
 vps_group = app_commands.Group(name="vps", description="Manage your VPS instances")
 admin_group = app_commands.Group(name="admin", description="Admin controls")
 
@@ -285,6 +343,51 @@ async def vps_create(interaction: discord.Interaction, os_type: str, ram: str = 
     else:
         await async_docker_rm(container_id)
         await interaction.followup.send("Failed to generate SSH session.", ephemeral=True)
+
+@vps_group.command(name="list", description="List your VPS instances")
+async def vps_list(interaction: discord.Interaction):
+    vps_list = get_user_vps(interaction.user.id)
+    if not vps_list:
+        return await interaction.response.send_message("You don't have any active VPS instances.", ephemeral=True)
+    
+    embed = discord.Embed(title="Your VPS Instances", color=discord.Color.blue())
+    for vps in vps_list:
+        embed.add_field(
+            name=f"{vps['container_name']} ({vps['os_type']})",
+            value=f"Status: **{vps['status']}**\nRAM: {vps['ram']} | CPU: {vps['cpu']}\nID: `{vps['container_id'][:12]}`",
+            inline=False
+        )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@vps_group.command(name="start", description="Start a stopped VPS")
+@app_commands.describe(vps_identifier="Container ID or Name")
+async def vps_start(interaction: discord.Interaction, vps_identifier: str = None):
+    vps = get_vps_by_identifier(interaction.user.id, vps_identifier)
+    if not vps:
+        return await interaction.response.send_message("VPS not found.", ephemeral=True)
+    
+    await interaction.response.defer(ephemeral=True)
+    success = await async_docker_start(vps['container_id'])
+    if success:
+        update_vps_status(vps['container_id'], "running")
+        await interaction.followup.send("VPS started successfully!", ephemeral=True)
+    else:
+        await interaction.followup.send("Failed to start VPS.", ephemeral=True)
+
+@vps_group.command(name="stop", description="Stop a running VPS")
+@app_commands.describe(vps_identifier="Container ID or Name")
+async def vps_stop(interaction: discord.Interaction, vps_identifier: str = None):
+    vps = get_vps_by_identifier(interaction.user.id, vps_identifier)
+    if not vps:
+        return await interaction.response.send_message("VPS not found.", ephemeral=True)
+    
+    await interaction.response.defer(ephemeral=True)
+    success = await async_docker_stop(vps['container_id'])
+    if success:
+        update_vps_status(vps['container_id'], "stopped")
+        await interaction.followup.send("VPS stopped successfully!", ephemeral=True)
+    else:
+        await interaction.followup.send("Failed to stop VPS.", ephemeral=True)
 
 @admin_group.command(name="list", description="List all VPS instances (Admin)")
 async def admin_list(interaction: discord.Interaction):
