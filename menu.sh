@@ -3,7 +3,7 @@
 while true; do
     clear
     echo "───────────────────────────────"
-    echo "      🚀 DISCORD BOT LXC 🚀    "
+    echo "     🚀 DISCORD BOT LXC 🚀     "
     echo "───────────────────────────────"
     echo "1. ⚙️  install"
     echo "2. 📊 create bot"
@@ -12,7 +12,7 @@ while true; do
     echo "5. 📁 uninstall"
     echo "6. ❌ Exit"
     echo "───────────────────────────────"
-    read -p "Enter your choice [1-5]: " choice
+    read -p "Enter your choice [1-6]: " choice
 
     case $choice in
         1)
@@ -21,17 +21,17 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         2)
-            echo "Running install..."
+            echo "Creating bot..."
             bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/createbot.sh)
             read -p "Press Enter to continue..."
             ;;    
         3)
-            echo "Creating bot..."
+            echo "Configuring VPS Defaults..."
             bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/vpsdefaults.sh)
             read -p "Press Enter to continue..."
             ;;
         4)
-            echo "Fixing 24/7..."
+            echo "Opening 24/7 manager..."
             bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/247.sh)
             read -p "Press Enter to continue..."
             ;;
@@ -45,7 +45,7 @@ while true; do
             exit 0
             ;;
         *)
-            echo "⚠️ Invalid option. Please choose between 1 and 5."
+            echo "⚠️ Invalid option. Please choose between 1 and 6."
             sleep 2
             ;;
     esac
