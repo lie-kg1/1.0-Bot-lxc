@@ -1,32 +1,37 @@
 #!/bin/bash
 
+REPO_URL="https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main"
+
 echo "🚀 Setting up vps-deploy directory..."
 mkdir -p vps-deploy
 
+# Handle .env file
 if [ -f "test.env" ]; then
     cp test.env vps-deploy/.env
     echo "✅ Copied local test.env to vps-deploy/.env"
 else
     echo "⚠️ Local test.env not found. Downloading from GitHub..."
-    curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/test.env -o vps-deploy/.env
+    curl -sL "$REPO_URL/test.env" -o vps-deploy/.env
     echo "✅ Downloaded .env successfully!"
 fi
 
+# Handle requirements.txt
 if [ -f "requirements.txt" ]; then
     cp requirements.txt vps-deploy/
     echo "✅ Copied local requirements.txt to vps-deploy/"
 else
     echo "⚠️ Local requirements.txt not found. Downloading from GitHub..."
-    curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/requirements.txt -o vps-deploy/requirements.txt
+    curl -sL "$REPO_URL/requirements.txt" -o vps-deploy/requirements.txt
     echo "✅ Downloaded requirements.txt successfully!"
 fi
 
+# Handle bot.py
 if [ -f "bot.py" ]; then
     cp bot.py vps-deploy/
     echo "✅ Copied local bot.py to vps-deploy/"
 else
     echo "⚠️ Local bot.py not found. Downloading from GitHub..."
-    curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/bot.py -o vps-deploy/bot.py
+    curl -sL "$REPO_URL/bot.py" -o vps-deploy/bot.py
     echo "✅ Downloaded bot.py successfully!"
 fi
 
@@ -67,9 +72,14 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 EOF
 
-echo "🔄 Reloading systemd and starting bot service..."
-sudo systemctl daemon-reload
-sudo systemctl enable bot
-sudo systemctl restart bot
-
-echo "✨ Installation and service setup completed successfully!"
+echo "🔄 Checking systemd and managing service..."
+if command -v systemctl &> /dev/null; then
+    sudo systemctl daemon-reload
+    sudo systemctl enable bot
+    sudo systemctl restart bot
+    echo "✨ Installation and systemd service setup completed successfully!"
+else
+    echo "⚠️ systemctl not found (Detected sandbox/container environment)."
+    echo "✨ Installation complete! Run your bot with:"
+    echo "   nohup python3 bot.py > bot.log 2>&1 &"
+fi
