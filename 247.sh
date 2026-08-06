@@ -1,12 +1,15 @@
 #!/bin/bash
 exec </dev/tty 2>/dev/null
 
+# Reliable absolute/relative path detection
 if [ -d "vps-deploy" ]; then
-    ENV_DIR="vps-deploy"
+    TARGET_DIR="vps-deploy"
+elif [ -d "./vps-deploy" ]; then
+    TARGET_DIR="./vps-deploy"
 elif [ -f "bot.py" ]; then
-    ENV_DIR="."
+    TARGET_DIR="."
 else
-    ENV_DIR="vps-deploy"
+    TARGET_DIR="vps-deploy"
 fi
 
 while true; do
@@ -23,19 +26,27 @@ while true; do
     echo "--------------------------------------------"
     read -p "Enter choice [1-5]: " choice
 
-    if [ ! -d "$ENV_DIR" ] && [ "$ENV_DIR" != "." ]; then
-        echo "⚠️ 'vps-deploy' directory missing! Run install first."
-        read -p "Press Enter..."
-        continue
+    # Re-verify directory exists dynamically
+    if [ ! -d "$TARGET_DIR" ] && [ "$TARGET_DIR" != "." ]; then
+        if [ -d "../vps-deploy" ]; then
+            TARGET_DIR="../vps-deploy"
+        elif [ -d "./vps-deploy" ]; then
+            TARGET_DIR="./vps-deploy"
+        else
+            echo "⚠️ 'vps-deploy' directory not found in current path: $(pwd)"
+            echo "Please ensure you run option 1 (install) first."
+            read -p "Press Enter to continue..."
+            continue
+        fi
     fi
 
     case $choice in
         1)
-            cd "$ENV_DIR" || exit
-            if systemctl is-active --quiet bot 2>/dev/null; then
-                echo "⚠️ Bot is already running via systemd!"
-            elif [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
+            cd "$TARGET_DIR" || exit
+            if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
                 echo "⚠️ Bot is already running in background!"
+            elif pgrep -f "python3 bot.py" > /dev/null; then
+                echo "⚠️ Bot process is already active!"
             else
                 echo "🚀 Launching bot 24/7..."
                 nohup python3 bot.py > bot.log 2>&1 &
@@ -48,12 +59,11 @@ while true; do
                 fi
             fi
             cd - > /dev/null
-            read -p "Press Enter..."
+            read -p "Press Enter to continue..."
             ;;
         2)
             echo "🔄 Restarting bot instantly..."
-            cd "$ENV_DIR" || exit
-            sudo systemctl restart bot 2>/dev/null
+            cd "$TARGET_DIR" || exit
             if [ -f "bot.pid" ]; then
                 kill "$(cat bot.pid)" 2>/dev/null
                 rm -f bot.pid
@@ -64,28 +74,26 @@ while true; do
             echo $! > bot.pid
             echo "✅ Bot restarted successfully!"
             cd - > /dev/null
-            read -p "Press Enter..."
+            read -p "Press Enter to continue..."
             ;;
         3)
-            echo "🛑 Stopping bot..."
-            cd "$ENV_DIR" || exit
-            sudo systemctl stop bot 2>/dev/null
+            echo "🛑 Stopping bot completely..."
+            cd "$TARGET_DIR" || exit
             if [ -f "bot.pid" ]; then
-                kill "$(cat bot.pid)" 2>/dev/null
+                PID=$(cat bot.pid)
+                kill "$PID" 2>/dev/null
                 rm -f bot.pid
             fi
             pkill -f "python3 bot.py" 2>/dev/null
-            echo "✅ Bot completely stopped (offline)."
+            echo "✅ Bot stopped successfully (Offline)."
             cd - > /dev/null
-            read -p "Press Enter..."
+            read -p "Press Enter to continue..."
             ;;
         4)
             echo "📊 Live Status Check:"
-            cd "$ENV_DIR" || exit
+            cd "$TARGET_DIR" || exit
             ONLINE=false
-            if systemctl is-active --quiet bot 2>/dev/null; then
-                ONLINE=true
-            elif [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
+            if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
                 ONLINE=true
             elif pgrep -f "python3 bot.py" > /dev/null; then
                 ONLINE=true
@@ -105,7 +113,7 @@ while true; do
             fi
             cd - > /dev/null
             echo ""
-            read -p "Press Enter..."
+            read -p "Press Enter to continue..."
             ;;
         5)
             echo "Exiting..."
