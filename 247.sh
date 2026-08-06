@@ -30,25 +30,25 @@ while true; do
         1)
             cd "$TARGET_DIR" || exit
             if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
-                echo "⚠️ Bot is already running in background!"
+                echo "⚠️  Bot is already running in background!"
             elif pgrep -f "python3 bot.py" > /dev/null; then
-                echo "⚠️ Bot process is already active!"
+                echo "⚠️  Bot process is already active!"
             else
-                echo "🚀 Launching bot 24/7..."
+                echo "🚀  Launching bot 24/7..."
                 nohup python3 bot.py > bot.log 2>&1 &
                 echo $! > bot.pid
                 sleep 0.5
                 if kill -0 "$(cat bot.pid)" 2>/dev/null; then
-                    echo "✅ Bot is online and running 24/7!"
+                    echo "✅  Bot is online and running 24/7!"
                 else
-                    echo "❌ Failed to start. Check option 4 for logs."
+                    echo "❌  Failed to start. Check option 4 for logs."
                 fi
             fi
             cd - > /dev/null
             read -p "Press Enter to continue..."
             ;;
         2)
-            echo "🔄 Restarting bot instantly..."
+            echo "🔄  Restarting bot instantly..."
             cd "$TARGET_DIR" || exit
             if [ -f "bot.pid" ]; then
                 kill "$(cat bot.pid)" 2>/dev/null
@@ -58,12 +58,12 @@ while true; do
             sleep 0.5
             nohup python3 bot.py > bot.log 2>&1 &
             echo $! > bot.pid
-            echo "✅ Bot restarted successfully!"
+            echo "✅  Bot restarted successfully!"
             cd - > /dev/null
             read -p "Press Enter to continue..."
             ;;
         3)
-            echo "🛑 Stopping bot completely..."
+            echo "🛑  Stopping bot completely..."
             cd "$TARGET_DIR" || exit
             if [ -f "bot.pid" ]; then
                 PID=$(cat bot.pid)
@@ -71,12 +71,12 @@ while true; do
                 rm -f bot.pid
             fi
             pkill -f "python3 bot.py" 2>/dev/null
-            echo "✅ Bot stopped successfully (Offline)."
+            echo "✅  Bot stopped successfully (Offline)."
             cd - > /dev/null
             read -p "Press Enter to continue..."
             ;;
         4)
-            echo "📊 Live Status Check:"
+            echo "📊  Live Status Check:"
             cd "$TARGET_DIR" || exit
             ONLINE=false
             if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
@@ -86,9 +86,9 @@ while true; do
             fi
 
             if [ "$ONLINE" = true ]; then
-                echo "🟢 Status: ONLINE (24/7 AFK Active)"
+                echo "🟢  Status: ONLINE (24/7 AFK Active)"
             else
-                echo "🔴 Status: OFFLINE (Stopped)"
+                echo "🔴  Status: OFFLINE (Stopped)"
             fi
             echo ""
             echo "--- Recent Logs (bot.log) ---"
@@ -106,7 +106,7 @@ while true; do
             exit 0
             ;;
         *)
-            echo "❌ Invalid option!"
+            echo "❌  Invalid option!"
             sleep 1
             ;;
     esac
