@@ -38,7 +38,9 @@ fi
 cd vps-deploy || exit
 
 echo "📦 Installing python3-pip..."
-sudo apt update && sudo apt install python3-pip -y
+if command -v apt &> /dev/null; then
+    sudo apt update && sudo apt install python3-pip -y
+fi
 
 echo "⚙️ Configuring pip..."
 mkdir -p ~/.config/pip 
@@ -55,7 +57,8 @@ echo "🛠️ Creating systemd service for 24/7 background running..."
 SERVICE_FILE="/etc/systemd/system/bot.service"
 CURRENT_DIR=$(pwd)
 
-sudo bash -c "cat > $SERVICE_FILE" <<EOF
+if command -v systemctl &> /dev/null; then
+    sudo bash -c "cat > $SERVICE_FILE" <<EOF
 [Unit]
 Description=Vps Discord Bot
 After=network.target
@@ -72,8 +75,7 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 EOF
 
-echo "🔄 Checking systemd and managing service..."
-if command -v systemctl &> /dev/null; then
+    echo "🔄 Checking systemd and managing service..."
     sudo systemctl daemon-reload
     sudo systemctl enable bot
     sudo systemctl restart bot
