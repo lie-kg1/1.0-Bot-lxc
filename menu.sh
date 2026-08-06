@@ -32,12 +32,12 @@ while true; do
             ;;
         4)
             echo "Fixing 24/7..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/247.sh)
             read -p "Press Enter to continue..."
             ;;
         5)
             echo "Running uninstall..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/uninstall.sh)
             read -p "Press Enter to continue..."
             ;;
         6)
