@@ -1,21 +1,21 @@
 #!/bin/bash
 exec </dev/tty 2>/dev/null
 
-# Reliable absolute/relative path detection
-if [ -d "vps-deploy" ]; then
-    TARGET_DIR="vps-deploy"
-elif [ -d "./vps-deploy" ]; then
-    TARGET_DIR="./vps-deploy"
-elif [ -f "bot.py" ]; then
+# Smart directory detection (works whether run from root or inside vps-deploy)
+if [ -f "bot.py" ]; then
     TARGET_DIR="."
-else
+elif [ -f "vps-deploy/bot.py" ]; then
     TARGET_DIR="vps-deploy"
+elif [ -d "vps-deploy" ]; then
+    TARGET_DIR="vps-deploy"
+else
+    TARGET_DIR="."
 fi
 
 while true; do
     clear
     echo "⚡ =========================================="
-    echo "    247 SPEED MANAGER (100% RELIABLE)        "
+    echo "                24/7 MANAGER                 "
     echo "============================================"
     echo ""
     echo "1. 🚀 Start Bot (24/7 Background)"
@@ -25,20 +25,6 @@ while true; do
     echo "5. ❌ Exit"
     echo "--------------------------------------------"
     read -p "Enter choice [1-5]: " choice
-
-    # Re-verify directory exists dynamically
-    if [ ! -d "$TARGET_DIR" ] && [ "$TARGET_DIR" != "." ]; then
-        if [ -d "../vps-deploy" ]; then
-            TARGET_DIR="../vps-deploy"
-        elif [ -d "./vps-deploy" ]; then
-            TARGET_DIR="./vps-deploy"
-        else
-            echo "⚠️ 'vps-deploy' directory not found in current path: $(pwd)"
-            echo "Please ensure you run option 1 (install) first."
-            read -p "Press Enter to continue..."
-            continue
-        fi
-    fi
 
     case $choice in
         1)
