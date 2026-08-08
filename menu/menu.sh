@@ -17,27 +17,27 @@ while true; do
     case $choice in
         1)
             echo "Running install..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/install.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/247.sh)
             read -p "Press Enter to continue..."
             ;;
         2)
             echo "Creating bot configuration..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/createbot.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/createbot.sh)
             read -p "Press Enter to continue..."
             ;;    
         3)
             echo "Configuring VPS Defaults..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/vpsdefaults.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/vpsdefaults.sh)
             read -p "Press Enter to continue..."
             ;;
         4)
             echo "Opening 24/7 manager..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/247.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/247.sh)
             read -p "Press Enter to continue..."
             ;;
         5)
             echo "Running uninstall..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/uninstall.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/uninstall.sh)
             read -p "Press Enter to continue..."
             ;;
         6)
