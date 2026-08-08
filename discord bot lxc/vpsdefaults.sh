@@ -3,9 +3,9 @@
 ENV_DIR="vps-deploy"
 ENV_PATH="$ENV_DIR/.env"
 
-echo "🤖  =========================================="
+echo "🤖  ─────────────────────────────────────────"
 echo "       VPS DEFAULTS CONFIGURATION (EDIT)     "
-echo "============================================"
+echo "────────────────────────────────────────────"
 echo ""
 
 if [ ! -f "$ENV_PATH" ]; then
