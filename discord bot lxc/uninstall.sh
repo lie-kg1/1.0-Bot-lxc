@@ -3,9 +3,9 @@
 ENV_DIR="vps-deploy"
 SERVICE_FILE="/etc/systemd/system/bot.service"
 
-echo "🗑️  =========================================="
+echo "🗑️  ─────────────────────────────────────────"
 echo "       DISCORD BOT UNINSTALLER               "
-echo "============================================"
+echo "────────────────────────────────────────────"
 echo ""
 
 # Stop any running bot instances
