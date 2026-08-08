@@ -14,16 +14,16 @@ fi
 
 while true; do
     clear
-    echo "⚡  ========================================="
+    echo "⚡ ──────────────────────────────────────────" 
     echo "                24/7 MANAGER                 "
-    echo "============================================"
+    echo "────────────────────────────────────────────"
     echo ""
     echo "1. 🚀  Start Bot (24/7 Background)"
     echo "2. 🔄  Restart Bot"
     echo "3. 🛑  Stop Bot"
     echo "4. 📊  Live Status & Logs"
     echo "5. ❌  Exit"
-    echo "--------------------------------------------"
+    echo "─────────────────────────────────────────────"
     read -p "Enter choice [1-5]: " choice
 
     case $choice in
