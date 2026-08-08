@@ -17,7 +17,7 @@ while true; do
     case $choice in
         1)
             echo "Running install..."
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/247.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/install.sh)
             read -p "Press Enter to continue..."
             ;;
         2)
