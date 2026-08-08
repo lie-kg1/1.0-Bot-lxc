@@ -12,11 +12,11 @@ fi
 
 REPO_URL="https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main"
 
-echo "🚀 Setting up clean vps-deploy directory..."
+printf "\033[1;36m🚀 Setting up clean vps-deploy directory...\033[0m\n"
 
 # Fix any nested vps-deploy/vps-deploy corruption if present
 if [ -d "vps-deploy/vps-deploy" ]; then
-    echo "🧹 Cleaning up nested directories..."
+    printf "\033[1;33m🧹 Cleaning up nested directories...\033[0m\n"
     cp -r vps-deploy/vps-deploy/* vps-deploy/ 2>/dev/null || true
     rm -rf vps-deploy/vps-deploy
 fi
@@ -26,12 +26,12 @@ mkdir -p vps-deploy
 # Handle .env configuration safely
 if [ -f "test.env" ]; then
     cp test.env vps-deploy/.env
-    echo "✅ Copied local test.env to vps-deploy/.env"
+    printf "\033[1;32m✅ Copied local test.env to vps-deploy/.env\033[0m\n"
 elif [ -f "vps-deploy/.env" ]; then
-    echo "✅ Existing .env configuration found!"
+    printf "\033[1;32m✅ Existing .env configuration found!\033[0m\n"
 else
     curl -sL "$REPO_URL/test.env" -o vps-deploy/.env 2>/dev/null || true
-    echo "✅ Downloaded default .env configuration!"
+    printf "\033[1;32m✅ Downloaded default .env configuration!\033[0m\n"
 fi
 
 # Handle requirements.txt
@@ -51,9 +51,9 @@ fi
 # Move into vps-deploy to install python packages
 cd vps-deploy || exit
 
-echo "📦 Installing Python dependencies..."
+printf "\033[1;36m📦 Installing Python dependencies...\033[0m\n"
 mkdir -p ~/.config/pip 
-echo -e "[global]\nbreak-system-packages = true" > ~/.config/pip/pip.conf
+printf "[global]\nbreak-system-packages = true" > ~/.config/pip/pip.conf
 
 if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt --quiet 2>/dev/null || true
@@ -61,12 +61,11 @@ fi
 
 pip install docker psutil --break-system-packages --quiet 2>/dev/null || true
 
-echo "⚙️  Checking environment capabilities..."
+printf "\033[1;36m⚙️  Checking environment capabilities...\033[0m\n"
 if [ -S /var/run/docker.sock ]; then
-    echo "✅ Docker socket detected."
+    printf "\033[1;32m✅ Docker socket detected.\033[0m\n"
 else
-    echo "⚠️ Note: Running in a cloud container (CodeSandbox/IDX). Real Docker daemon is not active here."
-    echo "   (To use full container creation in Discord, host this bot on a Linux VPS with Docker)."
+    printf "\033[1;33m⚠️ Note: Running in a local environment. Ensure Docker daemon is running if container features are required.\033[0m\n"
 fi
 
-echo "✨ Installation completed successfully!"
+printf "\033[1;32m✨ Installation completed successfully!\033[0m\n"
