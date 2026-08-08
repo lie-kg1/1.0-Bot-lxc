@@ -3,13 +3,12 @@
 ENV_DIR="vps-deploy"
 ENV_PATH="$ENV_DIR/.env"
 
-echo "🤖  ─────────────────────────────────────────"
-echo "       VPS DEFAULTS CONFIGURATION (EDIT)     "
-echo "────────────────────────────────────────────"
-echo ""
+printf "\033[1;36m🤖 ─────────────────────────────────────────\033[0m\n"
+printf "\033[1;36m        VPS DEFAULTS CONFIGURATION (EDIT)     \033[0m\n"
+printf "\033[1;36m────────────────────────────────────────────\033[0m\n\n"
 
 if [ ! -f "$ENV_PATH" ]; then
-    echo "⚠️  .env file not found in $ENV_DIR/! Please run 'create bot' first."
+    printf "\033[1;31m⚠️ .env file not found in $ENV_DIR/! Please run 'create bot' first.\033[0m\n"
     exit 1
 fi
 
@@ -28,25 +27,24 @@ CURRENT_HOSTNAME=${CURRENT_HOSTNAME:-unix-free}
 CURRENT_SERVER_LIMIT=${CURRENT_SERVER_LIMIT:-1}
 CURRENT_TOTAL_LIMIT=${CURRENT_TOTAL_LIMIT:-50}
 
-echo "Current values are shown in brackets [ ]. Press Enter to keep current values."
-echo ""
+printf "\033[1;33mCurrent values are shown in brackets [ ]. Press Enter to keep current values.\033[0m\n\n"
 
-read -p "🧠  Enter Default RAM [$CURRENT_RAM]: " NEW_RAM
+read -p "🧠 Enter Default RAM [$CURRENT_RAM]: " NEW_RAM
 NEW_RAM=${NEW_RAM:-$CURRENT_RAM}
 
-read -p "⚡  Enter Default CPU [$CURRENT_CPU]: " NEW_CPU
+read -p "⚡ Enter Default CPU [$CURRENT_CPU]: " NEW_CPU
 NEW_CPU=${NEW_CPU:-$CURRENT_CPU}
 
-read -p "💾  Enter Default Disk [$CURRENT_DISK]: " NEW_DISK
+read -p "💾 Enter Default Disk [$CURRENT_DISK]: " NEW_DISK
 NEW_DISK=${NEW_DISK:-$CURRENT_DISK}
 
-read -p "🌐  Enter VPS Hostname [$CURRENT_HOSTNAME]: " NEW_HOSTNAME
+read -p "🌐 Enter VPS Hostname [$CURRENT_HOSTNAME]: " NEW_HOSTNAME
 NEW_HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
 
-read -p "📊  Enter Server Limit per user [$CURRENT_SERVER_LIMIT]: " NEW_SERVER_LIMIT
+read -p "📊 Enter Server Limit per user [$CURRENT_SERVER_LIMIT]: " NEW_SERVER_LIMIT
 NEW_SERVER_LIMIT=${NEW_SERVER_LIMIT:-$CURRENT_SERVER_LIMIT}
 
-read -p "📈  Enter Total Server Limit [$CURRENT_TOTAL_LIMIT]: " NEW_TOTAL_LIMIT
+read -p "📈 Enter Total Server Limit [$CURRENT_TOTAL_LIMIT]: " NEW_TOTAL_LIMIT
 NEW_TOTAL_LIMIT=${NEW_TOTAL_LIMIT:-$CURRENT_TOTAL_LIMIT}
 
 # Safely update or append the values in the .env file using Python
@@ -89,5 +87,4 @@ with open(env_path, 'w') as f:
     f.writelines(new_lines)
 "
 
-echo ""
-echo "✅  VPS Defaults successfully updated and saved to $ENV_PATH!"
+printf "\n\033[1;32m✅ VPS Defaults successfully updated and saved to $ENV_PATH!\033[0m\n"
