@@ -12,9 +12,9 @@ fi
 
 ENV_PATH="$ENV_DIR/.env"
 
-echo "🤖 =========================================="
+echo "🤖 ──────────────────────────────────────────"
 echo "       DISCORD BOT SETUP (CREATE BOT)        "
-echo "============================================"
+echo "────────────────────────────────────────────"
 echo ""
 
 read -p "🔑  Enter your Discord Bot Token: " BOT_TOKEN
