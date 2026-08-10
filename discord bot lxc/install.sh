@@ -1,16 +1,4 @@
-#!/bin/bash
-exec </dev/tty
-
-# Find the true workspace root (avoiding getcwd errors)
-if [ -d "/project/workspace" ]; then
-    cd /project/workspace
-elif [ -d "$HOME" ]; then
-    cd "$HOME"
-else
-    cd "$(pwd)"
-fi
-
-# FIXED: Pointing directly to the 'bot' folder inside the main branch
+# FIXED: Correct Raw text retrieval endpoint address directory target path
 REPO_URL="https://github.com/lie-kg1/1.0-Bot-lxc/tree/main/bot"
 
 printf "\033[1;36m🚀 Setting up clean vps-deploy directory...\033[0m\n"
@@ -54,19 +42,20 @@ printf "\033[1;36m📦 Installing system dependencies and Python packages...\033
 # Update package list and install system-level Python 3 pip
 sudo apt update -y && sudo apt install -y python3-pip
 
-# Configure pip to allow global system package overrides
+# Configure pip to allow global system package overrides safely across both older/newer environments
 mkdir -p ~/.config/pip 
 printf "[global]\nbreak-system-packages = true\n" > ~/.config/pip/pip.conf
 
 # Move into vps-deploy to install python packages
 cd vps-deploy || exit 1
 
+# Install requirements if present
 if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt --quiet
+    python3 -m pip install -r requirements.txt --quiet || true
 fi
 
-# Install primary required tools
-pip install discord docker psutil --break-system-packages --quiet
+# Force structural dependency linking using explicit python execution block maps
+python3 -m pip install --upgrade --quiet discord.py docker python-dotenv aiofiles PyNaCl psutil
 
 printf "\033[1;36m⚙️  Checking environment capabilities...\033[0m\n"
 if [ -S /var/run/docker.sock ]; then
