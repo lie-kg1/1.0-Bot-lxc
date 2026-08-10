@@ -1,5 +1,6 @@
 #!/bin/bash
-exec </dev/tty 2>/dev/null
+# FIXED: Removed the 2>/dev/null suppression that blocks text prompt displays
+exec </dev/tty
 
 # Smart directory detection (works whether run from root or inside vps-deploy)
 if [ -f "bot.py" ]; then
@@ -28,7 +29,7 @@ while true; do
 
     case $choice in
         1)
-            cd "$TARGET_DIR" || exit
+            cd "$TARGET_DIR" || exit 1
             if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
                 echo "⚠️  Bot is already running in background!"
             elif pgrep -f "python3 bot.py" > /dev/null; then
@@ -44,12 +45,12 @@ while true; do
                     echo "❌  Failed to start. Check option 4 for logs."
                 fi
             fi
-            cd - > /dev/null
+            cd - > /dev/null || true
             read -p "Press Enter to continue..."
             ;;
         2)
             echo "🔄  Restarting bot instantly..."
-            cd "$TARGET_DIR" || exit
+            cd "$TARGET_DIR" || exit 1
             if [ -f "bot.pid" ]; then
                 kill "$(cat bot.pid)" 2>/dev/null
                 rm -f bot.pid
@@ -59,12 +60,12 @@ while true; do
             nohup python3 bot.py > bot.log 2>&1 &
             echo $! > bot.pid
             echo "✅  Bot restarted successfully!"
-            cd - > /dev/null
+            cd - > /dev/null || true
             read -p "Press Enter to continue..."
             ;;
         3)
             echo "🛑  Stopping bot completely..."
-            cd "$TARGET_DIR" || exit
+            cd "$TARGET_DIR" || exit 1
             if [ -f "bot.pid" ]; then
                 PID=$(cat bot.pid)
                 kill "$PID" 2>/dev/null
@@ -72,12 +73,12 @@ while true; do
             fi
             pkill -f "python3 bot.py" 2>/dev/null
             echo "✅  Bot stopped successfully (Offline)."
-            cd - > /dev/null
+            cd - > /dev/null || true
             read -p "Press Enter to continue..."
             ;;
         4)
             echo "📊  Live Status Check:"
-            cd "$TARGET_DIR" || exit
+            cd "$TARGET_DIR" || exit 1
             ONLINE=false
             if [ -f "bot.pid" ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
                 ONLINE=true
@@ -97,7 +98,7 @@ while true; do
             else
                 echo "No logs found yet."
             fi
-            cd - > /dev/null
+            cd - > /dev/null || true
             echo ""
             read -p "Press Enter to continue..."
             ;;
