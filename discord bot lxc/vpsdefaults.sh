@@ -1,14 +1,21 @@
 #!/bin/bash
+exec </dev/tty
 
-ENV_DIR="vps-deploy"
-ENV_PATH="$ENV_DIR/.env"
+# Smart path detection to find where .env actually lives
+if [ -f ".env" ] && [ ! -d "vps-deploy" ]; then
+    ENV_PATH=".env"
+elif [ -f "vps-deploy/.env" ]; then
+    ENV_PATH="vps-deploy/.env"
+else
+    ENV_PATH="vps-deploy/.env"
+fi
 
 printf "\033[1;36m🤖 ─────────────────────────────────────────\033[0m\n"
 printf "\033[1;36m        VPS DEFAULTS CONFIGURATION (EDIT)     \033[0m\n"
 printf "\033[1;36m────────────────────────────────────────────\033[0m\n\n"
 
 if [ ! -f "$ENV_PATH" ]; then
-    printf "\033[1;31m⚠️ .env file not found in $ENV_DIR/! Please run 'create bot' first.\033[0m\n"
+    printf "\033[1;31m⚠️ .env file not found! Please run 'create bot' (createbot.sh) first.\033[0m\n"
     exit 1
 fi
 
