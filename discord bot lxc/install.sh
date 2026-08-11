@@ -21,18 +21,22 @@ if [ -f "test.env" ]; then
 elif [ -f "vps-deploy/.env" ]; then
     printf "\033[1;32m✅ Existing .env configuration found!\033[0m\n"
 else
-    echo "⚠️ Error: No test.env or .env file found locally."
-    exit 1
+    curl -sL "https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/bot/test.env" -o vps-deploy/.env
+    printf "\033[1;32m✅ Downloaded default .env configuration!\033[0m\n"
 fi
 
 # Handle requirements.txt
 if [ -f "requirements.txt" ]; then
     cp requirements.txt vps-deploy/
+else
+    curl -sL "https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/bot/requirements.txt" -o vps-deploy/requirements.txt
 fi
 
 # Handle bot.py
 if [ -f "bot.py" ]; then
     cp bot.py vps-deploy/
+else
+    curl -sL "https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/bot/bot.py" -o vps-deploy/bot.py
 fi
 
 printf "\033[1;36m📦 Installing system dependencies and Python packages...\033[0m\n"
