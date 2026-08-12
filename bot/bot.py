@@ -57,7 +57,9 @@ logger = logging.getLogger(__name__)
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
-client = docker.from_env()
+import podman
+
+client = podman.PodmanClient(base_url="unix:///tmp/podman.sock")
 
 def is_admin(member):
     if not isinstance(member, discord.Member):
