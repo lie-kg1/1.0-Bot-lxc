@@ -5,7 +5,7 @@ ENV_DIR="vps-deploy"
 SERVICE_FILE="/etc/systemd/system/bot.service"
 
 printf "\033[1;36m🗑️ ─────────────────────────────────────────\033[0m\n"
-printf "\033[1;36m         DISCORD BOT UNINSTALLER             \033[0m\n"
+printf "\033[1;36m          DISCORD BOT UNINSTALLER             \033[0m\n"
 printf "\033[1;36m────────────────────────────────────────────\033[0m\n\n"
 
 printf "\033[1;31mThis will permanently:\033[0m\n"
