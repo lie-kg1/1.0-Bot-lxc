@@ -1,51 +1,57 @@
 #!/bin/bash
 set -e
 
-printf "\033[1;35m🎮 Welcome to the Botpanel Lobby & Menu\033[0m\n"
+# ANSI Color Codes
+CYAN='\033[1;36m'
+MAGENTA='\033[1;35m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+BLUE='\033[1;34m'
+NC='\033[0m' # No Color
 
-# Navigate to botpanel directory
 if [ -d "botpanel" ]; then
     cd botpanel
 else
-    printf "\033[1;31m✗ 'botpanel' directory not found!\033[0m\n"
+    printf "${RED}✗ 'botpanel' directory not found!${NC}\n"
     exit 1
 fi
 
 while true; do
-    echo "======================================"
-    echo "          BOTPANEL  MENU         "
-    echo "======================================"
-    echo "1) Install Dependencies (npm install)"
-    echo "2) Start Panel 24/7 (node server.js)"
-    echo "3) Setup .env Configuration File"
-    echo "4) Exit"
-    echo "======================================"
+    printf "${BLUE}──────────────────────────────────────${NC}\n"
+    printf "${CYAN}              BOTPANEL                ${NC}\n"
+    printf "${BLUE}──────────────────────────────────────${NC}\n"
+    printf "${YELLOW}1)${NC} Install Dependencies (npm install)\n"
+    printf "${YELLOW}2)${NC} Start Panel 24/7 (node server.js)\n"
+    printf "${YELLOW}3)${NC} Setup .env Configuration File\n"
+    printf "${YELLOW}4)${NC} Exit\n"
+    printf "${BLUE}──────────────────────────────────────${NC}\n"
     read -p "Choose an option [1-4]: " choice
 
     case $choice in
         1)
-            printf "\033[1;33m📦 Installing Node.js dependencies...\033[0m\n"
+            printf "${YELLOW}📦 Installing Node.js dependencies...${NC}\n"
             npm install
-            printf "\033[1;32m✅ Installation complete!\033[0m\n"
+            printf "${GREEN}✅ Installation complete!${NC}\n"
             ;;
         2)
-            printf "\033[1;32m✨ Starting server.js 24/7...\033[0m\n"
+            printf "${GREEN}✨ Starting server.js 24/7...${NC}\n"
             node server.js
             ;;
         3)
             if [ ! -f ".env" ] && [ -f ".env.example" ]; then
                 cp .env.example .env
-                printf "\033[1;32m✅ Created .env file successfully!\033[0m\n"
+                printf "${GREEN}✅ Created .env file successfully!${NC}\n"
             else
-                printf "\033[1;33m⚠️ .env already exists or .env.example is missing.\033[0m\n"
+                printf "${YELLOW}⚠️ .env already exists or .env.example is missing.${NC}\n"
             fi
             ;;
         4)
-            printf "\033[1;36m👋 Exiting menu. Goodbye!\033[0m\n"
+            printf "${CYAN}👋 Exiting menu. Goodbye!${NC}\n"
             exit 0
             ;;
         *)
-            printf "\033[1;31m❌ Invalid option. Please choose between 1 and 4.\033[0m\n"
+            printf "${RED}❌ Invalid option. Please choose between 1 and 4.${NC}\n"
             ;;
     esac
     echo ""
