@@ -1,6 +1,3 @@
-bash
-
-mkdir -p /home/claude/botfix && cat > /home/claude/botfix/bot.py << 'PYEOF'
 import random
 import logging
 import subprocess
@@ -1333,5 +1330,3 @@ if __name__ == "__main__":
         logger.error("TOKEN not set in .env")
         sys.exit(1)
     bot.run(TOKEN)
-PYEOF
-echo "written"
