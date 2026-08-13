@@ -1,4 +1,4 @@
-# 1.0-Bot-lxc
+# Discord-bot-Lxc
 
 A specialized bot setup and management system designed to run within Linux Containers (LXC).
 
