@@ -20,8 +20,9 @@ while true; do
     printf "${YELLOW}4)${NC} 🚀 Opening 24/7 manager\n"
     printf "${YELLOW}5)${NC} 🗑️ Running uninstall\n"
     printf "${YELLOW}6)${NC} 👋 Exit\n"
+    printf "${YELLOW}6)${NC} 👋 Exit\n"
     printf "${BLUE}──────────────────────────────────────${NC}\n"
-    read -p "Choose an option [1-6]: " choice
+    read -p "Choose an option [1-7]: " choice
 
     case $choice in
         1)
@@ -43,6 +44,10 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         6)
+            launch_botpanel
+            read -p "Press Enter to continue..."
+            ;;
+        7)
             printf "${CYAN}Exiting...${NC}\n"
             exit 0
             ;;
