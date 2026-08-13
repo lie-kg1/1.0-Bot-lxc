@@ -38,7 +38,7 @@ launch_botpanel() {
 while true; do
     clear
     printf "\033[1;36m───────────────────────────────\033[0m\n"
-    printf "\033[1;32m    🚀  DISCORD BOT LXC 🚀     \033[0m\n"
+    printf "\033[1;32m    🚀  DISCORD BOT LXC 🚀      \033[0m\n"
     printf "\033[1;36m───────────────────────────────\033[0m\n"
     printf "\033[1;33m1.\033[0m ⚙️  install\n"
     printf "\033[1;33m2.\033[0m 📊 create bot\n"
@@ -76,7 +76,8 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         6)
-            launch_botpanel
+            printf "\033[1;32mLaunching botpanel...\033[0m\n"
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/botpanel.sh) || launch_botpanel
             read -p "Press Enter to continue..."
             ;;
         7)
