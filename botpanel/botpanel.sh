@@ -41,7 +41,7 @@ while true; do
             ;;
         5)
             printf "${RED}Running uninstall...${NC}\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/.sh) || true
+            bash <(curl -sL https://github.com/lie-kg1/1.0-Bot-lxc/raw/refs/heads/main/botpanel/uninstall.sh || true
             read -p "Press Enter to continue..."
             ;;
         6)
