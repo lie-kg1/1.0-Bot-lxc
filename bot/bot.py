@@ -1,3 +1,6 @@
+bash
+
+mkdir -p /home/claude/botfix && cat > /home/claude/botfix/bot.py << 'PYEOF'
 import random
 import logging
 import subprocess
@@ -31,6 +34,15 @@ SERVER_LIMIT = int(os.getenv('SERVER_LIMIT', 1))
 TOTAL_SERVER_LIMIT = int(os.getenv('TOTAL_SERVER_LIMIT', 50))  # Global total running server limit
 DATABASE_FILE = os.getenv('DATABASE_FILE', 'vps_bot.db')
 
+# SECURITY: Containers are no longer --privileged with --cap-add=ALL by default.
+# Privileged containers can trivially escape to the host (mount host devices,
+# load kernel modules, access other containers' data), which is a serious risk
+# when containers are provisioned for arbitrary/untrusted Discord users.
+# If you specifically need privileged mode (e.g. for nested Docker-in-Docker
+# use cases) and you fully trust everyone who can run /deploy, set
+# ALLOW_PRIVILEGED_CONTAINERS=true in .env. Leave it unset/false otherwise.
+ALLOW_PRIVILEGED_CONTAINERS = os.getenv('ALLOW_PRIVILEGED_CONTAINERS', 'false').lower() == 'true'
+
 # Centralized OS Mapping for Docker Images and Display Names
 OS_MAPPING = {
     "ubuntu_22": ("ubuntu:22.04", "Ubuntu 22.04 LTS"),
@@ -57,9 +69,13 @@ logger = logging.getLogger(__name__)
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
-import podman
 
-client = podman.PodmanClient(base_url="unix:///tmp/podman.sock")
+# NOTE: the previous version imported the 'podman' package and created a
+# PodmanClient here, but nothing in install.sh installs 'podman', and the
+# rest of this file drives containers exclusively through the 'docker' CLI
+# / subprocess calls. That mismatch meant this import (or the first call
+# to client.info()) would crash the bot. Host resource info is now fetched
+# via `docker info` instead — see get_host_resources() below.
 
 def is_admin(member):
     if not isinstance(member, discord.Member):
@@ -235,6 +251,34 @@ def parse_gb(resource_str):
             return num / 1024.0
     return 0.0
 
+def validate_ram_or_disk(value):
+    """Basic sanity check for '2g', '512m', '10G' style resource strings."""
+    return bool(re.match(r'^\d+(\.\d+)?[mMgG]$', value.strip()))
+
+def validate_cpu(value):
+    """CPU must be a positive number (docker --cpus accepts fractional values)."""
+    try:
+        return float(value) > 0
+    except (TypeError, ValueError):
+        return False
+
+def get_host_resources():
+    """
+    Reads host CPU count and total memory (GB) via `docker info`, replacing
+    the previous podman-based check (podman was never actually installed).
+    """
+    try:
+        ncpu = subprocess.check_output(
+            ["docker", "info", "--format", "{{.NCPU}}"], stderr=subprocess.STDOUT
+        ).decode().strip()
+        mem_bytes = subprocess.check_output(
+            ["docker", "info", "--format", "{{.MemTotal}}"], stderr=subprocess.STDOUT
+        ).decode().strip()
+        return int(ncpu), int(mem_bytes) / (1024 ** 3)
+    except Exception as e:
+        logger.error(f"Failed to read host resources via docker info: {e}")
+        return None, None
+
 def get_uptime(container_id):
     try:
         output = subprocess.check_output(["docker", "inspect", "-f", "{{.State.StartedAt}}", container_id], stderr=subprocess.STDOUT).decode().strip()
@@ -278,15 +322,25 @@ def get_logs(container_id, lines=50):
 async def async_docker_run(image, hostname, ram, cpu, disk, container_name):
     cmd = [
         "docker", "run", "-d",
-        "--privileged", "--cap-add=ALL",
         "--restart", "unless-stopped",
         f"--memory={ram}",
         f"--cpus={cpu}",
         f"--hostname={hostname}",
         f"--name={container_name}",
-        image,
-        "tail", "-f", "/dev/null"
     ]
+
+    if ALLOW_PRIVILEGED_CONTAINERS:
+        # Explicitly opted into full-host-access containers via .env.
+        # See the ALLOW_PRIVILEGED_CONTAINERS comment near the top of this file.
+        cmd += ["--privileged", "--cap-add=ALL"]
+        logger.warning(f"Launching PRIVILEGED container {container_name} (ALLOW_PRIVILEGED_CONTAINERS=true)")
+    else:
+        # Safer default: no privileged mode, no capability escalation, and
+        # explicitly block privilege escalation inside the container.
+        cmd += ["--security-opt=no-new-privileges"]
+
+    cmd += [image, "tail", "-f", "/dev/null"]
+
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -516,16 +570,16 @@ async def reinstall_vps(interaction: discord.Interaction, vps_identifier, os_typ
     user_id = vps['user_id']
     hostname = vps['hostname']
     ram, cpu, disk = vps['ram'], vps['cpu'], vps['disk']
-    
+
     await async_docker_stop(container_id)
     await asyncio.sleep(2)
     await async_docker_rm(container_id)
     delete_vps(container_id)
-    
+
     suffix = random.randint(1000, 9999)
     new_container_name = f"{os_type}-vps-{user_id}-{suffix}"
     image, os_name = OS_MAPPING.get(os_type, ("ubuntu:22.04", "Ubuntu 22.04 LTS"))
-    
+
     new_container_id = await async_docker_run(image, hostname, ram, cpu, disk, new_container_name)
     if new_container_id:
         await async_install_tmate(new_container_id, os_type)
@@ -568,11 +622,24 @@ async def create_vps(interaction: discord.Interaction, os_type, ram=DEFAULT_RAM,
         embed = discord.Embed(description=f"Global server limit reached: {TOTAL_SERVER_LIMIT} total running instances.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
-    
+
+    if not validate_cpu(cpu):
+        embed = discord.Embed(description=f"Invalid CPU value: `{cpu}`. Must be a positive number, e.g. 1 or 0.5.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    if not validate_ram_or_disk(ram):
+        embed = discord.Embed(description=f"Invalid RAM value: `{ram}`. Use a number followed by g/G or m/M, e.g. 2g.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    if not validate_ram_or_disk(disk):
+        embed = discord.Embed(description=f"Invalid Disk value: `{disk}`. Use a number followed by g/G or m/M, e.g. 10G.", color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
     try:
-        host_info = client.info()
-        host_cpus = host_info['NCPU']
-        host_mem_gb = host_info['MemTotal'] / (1024 ** 3)
+        host_cpus, host_mem_gb = get_host_resources()
+        if host_cpus is None or host_mem_gb is None:
+            raise RuntimeError("could not read host resources")
         req_cpu = float(cpu)
         req_ram = parse_gb(ram)
         if req_cpu > host_cpus:
@@ -588,28 +655,28 @@ async def create_vps(interaction: discord.Interaction, os_type, ram=DEFAULT_RAM,
         embed = discord.Embed(description="Resource validation failed. Please contact an admin.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
-    
+
     await interaction.response.defer(ephemeral=True)
     await interaction.followup.send("Creating your VPS instance...", ephemeral=True)
-    
+
     hostname = f"{VPS_HOSTNAME}-{user_id}"
     suffix = random.randint(1000, 9999)
     container_name = f"{os_type}-vps-{user_id}-{suffix}"
-    
+
     image, os_name = OS_MAPPING.get(os_type, ("ubuntu:22.04", "Ubuntu 22.04 LTS"))
     container_id = await async_docker_run(image, hostname, ram, cpu, disk, container_name)
-    
+
     if not container_id:
         embed = discord.Embed(description="Failed to create Docker container. (Check logs for details)", color=discord.Color.red())
         await interaction.followup.send(embed=embed, ephemeral=True)
         return
-        
+
     await asyncio.sleep(5)
     await async_install_tmate(container_id, os_type)
     await asyncio.sleep(10)
     exec_process = await docker_exec_tmate(container_id)
     ssh_line = await capture_ssh_session_line(exec_process)
-    
+
     if ssh_line:
         add_vps(user_id, container_id, container_name, os_type, hostname, ssh_line, ram, cpu, disk)
         embed = discord.Embed(title="VPS Instance Created", description=f"OS: {os_name}\nRAM: {ram} | CPU: {cpu} | Disk: {disk}\n```{ssh_line}```", color=discord.Color.green(), timestamp=datetime.now(timezone.utc))
@@ -738,7 +805,7 @@ async def admin_list(interaction: discord.Interaction):
         status_emoji = "🟢" if status == "running" else "🔴"
         suspended_text = "(Suspended)" if suspended else ""
         os_name = OS_MAPPING.get(os_type, ("ubuntu:22.04", "Ubuntu 22.04 LTS"))[1]
-        
+
         field_value = (
             f"ID: ```{container_id}```\n"
             f"Hostname: {hostname}\n"
@@ -1127,7 +1194,7 @@ async def list_vps(interaction: discord.Interaction):
         uptime = get_uptime(vps['container_id'])
         suspended_text = "(Suspended)" if vps['suspended'] else ""
         os_name = OS_MAPPING.get(vps['os_type'], ("ubuntu:22.04", "Ubuntu 22.04 LTS"))[1]
-        
+
         field_value = (
             f"ID: ```{vps['container_id']}```\n"
             f"Hostname: {vps['hostname']}\n"
@@ -1266,3 +1333,5 @@ if __name__ == "__main__":
         logger.error("TOKEN not set in .env")
         sys.exit(1)
     bot.run(TOKEN)
+PYEOF
+echo "written"
