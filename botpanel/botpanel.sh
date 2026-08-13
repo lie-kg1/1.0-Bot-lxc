@@ -36,7 +36,7 @@ while true; do
             ;;
         4)
             printf "${GREEN}Opening 24/7 manager...${NC}\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/.sh) || true
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/Opening%20247%20manager.sh) || true
             read -p "Press Enter to continue..."
             ;;
         5)
