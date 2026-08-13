@@ -19,8 +19,8 @@ while true; do
     printf "${YELLOW}2)${NC} ⚙️ Setup .env Configuration File\n"
     printf "${YELLOW}4)${NC} 🚀 Opening 24/7 manager\n"
     printf "${YELLOW}5)${NC} 🗑️ Running uninstall\n"
-    printf "${YELLOW}6)${NC} 👋 Exit\n"
-    printf "${YELLOW}6)${NC} 👋 Exit\n"
+    printf "${YELLOW}6)${NC} 🌐 Launch botpanel\n"
+    printf "${YELLOW}7)${NC} 👋 Exit\n"
     printf "${BLUE}──────────────────────────────────────${NC}\n"
     read -p "Choose an option [1-7]: " choice
 
