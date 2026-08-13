@@ -75,15 +75,12 @@ sudo apt update -y && sudo apt install -y python3-pip
 # Move into vps-deploy to install python packages
 cd vps-deploy || exit 1
 
-# Install requirements if present. --break-system-packages is scoped to
-# just these install commands rather than written into a persistent
-# global pip config, so it doesn't silently affect unrelated future
-# pip installs on this machine.
+# Install requirements if present (removed --break-system-packages for container compatibility)
 if [ -f "requirements.txt" ]; then
-    python3 -m pip install --break-system-packages -r requirements.txt --quiet
+    python3 -m pip install -r requirements.txt --quiet
 fi
 
-python3 -m pip install --break-system-packages --upgrade --quiet \
+python3 -m pip install --upgrade --quiet \
     discord.py docker python-dotenv aiofiles PyNaCl psutil
 
 printf "\033[1;36m⚙️ Checking environment capabilities...\033[0m\n"
