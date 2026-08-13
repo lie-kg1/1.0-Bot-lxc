@@ -76,8 +76,7 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         6)
-            printf "\033[1;32mLaunching botpanel...\033[0m\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/botpanel.sh) || launch_botpanel
+            printf "\033[1;32mBotPanel ERROR SOON...\033[0m\n"
             read -p "Press Enter to continue..."
             ;;
         7)
