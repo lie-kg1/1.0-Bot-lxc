@@ -31,7 +31,7 @@ while true; do
             ;;
         2)
             printf "${GREEN}Creating bot configuration...${NC}\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/.sh) || true
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/Setup%20.env%20Configuration.sh) || true
             read -p "Press Enter to continue..."
             ;;
         4)
