@@ -21,7 +21,7 @@ while true; do
     printf "${YELLOW}5)${NC} 🗑️ Running uninstall\n"
     printf "${YELLOW}6)${NC} 👋 Exit\n"
     printf "${BLUE}──────────────────────────────────────${NC}\n"
-    read -p "Choose an option [1, 2, 4, 5, 6]: " choice
+    read -p "Choose an option [1-6]: " choice
 
     case $choice in
         1)
