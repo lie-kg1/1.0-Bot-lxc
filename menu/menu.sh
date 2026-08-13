@@ -76,7 +76,6 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         6)
-            printf "\033[1;32mBot Panel...\033[0m\n"
             read -p "Press Enter to continue..."
             ;;
         7)
