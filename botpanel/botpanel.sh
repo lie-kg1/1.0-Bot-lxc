@@ -32,11 +32,11 @@ while true; do
             ;;
         2)
             printf "${GREEN}Creating bot configuration...${NC}\n"
-            bash <(curl -sL "https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/Setup%20.env%20Configuration.sh")
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/Setup%20.env%20Configuration.sh)
             ;;
         4)
             printf "${GREEN}Opening 24/7 manager...${NC}\n"
-            bash <(curl -sL "https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/Opening%20247%20manager.sh")
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/Opening%20247%20manager.sh)
             ;;
         5)
             printf "${RED}Running uninstall...${NC}\n"
