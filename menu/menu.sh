@@ -77,7 +77,6 @@ while true; do
             ;;
         6)
             printf "\033[1;32mBot Panel...\033[0m\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/Bot-Panel/refs/heads/main/Bot-Panel/Bot%20Panel.sh)
             read -p "Press Enter to continue..."
             ;;
         7)
