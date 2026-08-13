@@ -31,17 +31,17 @@ while true; do
             ;;
         2)
             printf "${GREEN}Creating bot configuration...${NC}\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/.sh) || true
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/.sh) || true
             read -p "Press Enter to continue..."
             ;;
         4)
             printf "${GREEN}Opening 24/7 manager...${NC}\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/.sh) || true
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/.sh) || true
             read -p "Press Enter to continue..."
             ;;
         5)
             printf "${RED}Running uninstall...${NC}\n"
-            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/.sh) || true
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/botpanel/.sh) || true
             read -p "Press Enter to continue..."
             ;;
         6)
