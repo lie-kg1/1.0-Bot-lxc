@@ -45,7 +45,7 @@ while true; do
     printf "\033[1;33m3.\033[0m ⚙️ VPS Defaults\n"
     printf "\033[1;33m4.\033[0m 🛠️ 24/7 Manager\n"
     printf "\033[1;33m5.\033[0m 📁 uninstall\n"
-    printf "\033[1;33m6.\033[0m 🌐 Launch botpanel\n"
+    printf "\033[1;33m6.\033[0m 🌐 Bot Panel\n"
     printf "\033[1;33m7.\033[0m ❌ Exit\n"
     printf "\033[1;36m───────────────────────────────\033[0m\n"
     read -p "Enter your choice [1-7]: " choice
@@ -76,7 +76,8 @@ while true; do
             read -p "Press Enter to continue..."
             ;;
         6)
-            printf "\033[1;32mBotPanel ERROR SOON...\033[0m\n"
+            printf "\033[1;32mBot Panel...\033[0m\n"
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/Bot-Panel/refs/heads/main/Bot-Panel/Bot%20Panel.sh)
             read -p "Press Enter to continue..."
             ;;
         7)
