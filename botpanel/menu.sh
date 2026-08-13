@@ -10,49 +10,47 @@ RED='\033[1;31m'
 BLUE='\033[1;34m'
 NC='\033[0m' # No Color
 
-if [ -d "botpanel" ]; then
-    cd botpanel
-else
-    printf "${RED}✗ 'botpanel' directory not found!${NC}\n"
-    exit 1
-fi
-
 while true; do
+    clear
     printf "${BLUE}──────────────────────────────────────${NC}\n"
     printf "${CYAN}              BOTPANEL                ${NC}\n"
     printf "${BLUE}──────────────────────────────────────${NC}\n"
-    printf "${YELLOW}1)${NC} Install Dependencies (npm install)\n"
-    printf "${YELLOW}2)${NC} Start Panel 24/7 (node server.js)\n"
-    printf "${YELLOW}3)${NC} Setup .env Configuration File\n"
-    printf "${YELLOW}4)${NC} Exit\n"
+    printf "${YELLOW}1)${NC} 📦 Running install\n"
+    printf "${YELLOW}2)${NC} ⚙️ Setup .env Configuration File\n"
+    printf "${YELLOW}4)${NC} 🚀 Opening 24/7 manager\n"
+    printf "${YELLOW}5)${NC} 🗑️ Running uninstall\n"
+    printf "${YELLOW}6)${NC} 👋 Exit\n"
     printf "${BLUE}──────────────────────────────────────${NC}\n"
-    read -p "Choose an option [1-4]: " choice
+    read -p "Choose an option [1, 2, 4, 5, 6]: " choice
 
     case $choice in
         1)
-            printf "${YELLOW}📦 Installing Node.js dependencies...${NC}\n"
-            npm install
-            printf "${GREEN}✅ Installation complete!${NC}\n"
+            printf "${GREEN}Running install...${NC}\n"
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/.sh) || true
+            read -p "Press Enter to continue..."
             ;;
         2)
-            printf "${GREEN}✨ Starting server.js 24/7...${NC}\n"
-            node server.js
-            ;;
-        3)
-            if [ ! -f ".env" ] && [ -f ".env.example" ]; then
-                cp .env.example .env
-                printf "${GREEN}✅ Created .env file successfully!${NC}\n"
-            else
-                printf "${YELLOW}⚠️ .env already exists or .env.example is missing.${NC}\n"
-            fi
+            printf "${GREEN}Creating bot configuration...${NC}\n"
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/.sh) || true
+            read -p "Press Enter to continue..."
             ;;
         4)
-            printf "${CYAN}👋 Exiting menu. Goodbye!${NC}\n"
+            printf "${GREEN}Opening 24/7 manager...${NC}\n"
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/.sh) || true
+            read -p "Press Enter to continue..."
+            ;;
+        5)
+            printf "${RED}Running uninstall...${NC}\n"
+            bash <(curl -sL https://raw.githubusercontent.com/lie-kg1/1.0-Bot-lxc/refs/heads/main/discord%20bot%20lxc/.sh) || true
+            read -p "Press Enter to continue..."
+            ;;
+        6)
+            printf "${CYAN}Exiting...${NC}\n"
             exit 0
             ;;
         *)
-            printf "${RED}❌ Invalid option. Please choose between 1 and 4.${NC}\n"
+            printf "${RED}⚠️ Invalid option. Please choose a valid option.${NC}\n"
+            sleep 2
             ;;
     esac
-    echo ""
 done
